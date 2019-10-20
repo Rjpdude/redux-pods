@@ -1,6 +1,6 @@
 {
   "name": "redux-pods",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Ryan J. Pridgen",
   "license": "MIT",
   "description": "An integrated framework for the creation and management of Redux Reducers.",

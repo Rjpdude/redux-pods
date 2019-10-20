@@ -51,7 +51,11 @@ export class PodMethods<S, A extends ActionSet<S>> {
   mapState(storeState: any, ...selector: any[]) {
     return typeof selector[0] === 'function'
       ? mapStateFromFunction(selector[0], storeState, this.path(), [])
-      : mapStateFromPath(storeState, this.path(), selector)
+      : mapStateFromPath(
+          storeState,
+          this.path(),
+          typeof selector[0] !== 'string' ? undefined : selector
+        )
   }
 
   on<N extends ActionSet<S>>(actions: N): ChainedPod<S, A & N>

@@ -23,6 +23,16 @@ describe('[unit] methods class', () => {
       ).toBe(initialState)
     })
 
+    test('maps state given a react-redux type ownprops argument', () => {
+      expect(
+        // @ts-ignore
+        createMethodsInstance({ initialState, path: 'first' }).mapState(
+          mockState,
+          { incomingOwnProp: '' }
+        )
+      ).toBe(initialState)
+    })
+
     test('maps partial state when supplied array of strings', () => {
       const instance = createMethodsInstance({ initialState, path: 'first' })
       expect(instance.mapState(mockState, 'prop')).toEqual({
