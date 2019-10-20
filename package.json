@@ -1,0 +1,43 @@
+{
+  "name": "redux-pods",
+  "version": "1.0.0",
+  "author": "Ryan J. Pridgen",
+  "license": "MIT",
+  "description": "An integrated framework for the creation and management of Redux Reducers.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rjpdude/redux-pods.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Rjpdude/redux-pods/issues"
+  },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib/**/*"
+  ],
+  "scripts": {
+    "test": "jest --config jestconfig.json",
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.tsx\"",
+    "lint": "tslint -p tsconfig.json",
+    "prepublishOnly": "npm run test && npm run lint",
+    "prepare": "tsc"
+  },
+  "dependencies": {
+    "immer": "^4.0.0",
+    "lodash": "^4.17.15",
+    "redux": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/enzyme": "^3.10.1",
+    "@types/jest": "^24.0.15",
+    "@types/lodash": "^4.14.144",
+    "enzyme": "^3.10.0",
+    "jest": "^24.8.0",
+    "prettier": "^1.18.2",
+    "ts-jest": "^24.0.2",
+    "tslint": "^5.18.0",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.5.2"
+  }
+}
