@@ -15,7 +15,7 @@ A framework for Redux which makes the creataion of reducers and action creators 
 ```TS
 import pod from 'redux-pods';
 
-export const count = pod({
+export const countPod = pod({
   count: 0
 }).on({
   setCount: (to: number) => (state) => {
@@ -29,18 +29,18 @@ export const count = pod({
 
 ```JSX
 import { connect } from 'react-redux';
-import { count } from './reducer';
+import { countPod } from './reducer';
 
 function Counter(props) {
   return (
     <div>
       <p>You clicked {props.count} times</p>
-      <button onClick={() => count.setCount(props.count + 1)}>
+      <button onClick={() => countPod.setCount(props.count + 1)}>
         Click me
       </button>
     </div>
   );
 }
 
-export default connect(count.mapState)(Component);
+export default connect(countPod.mapState)(Counter);
 ```
