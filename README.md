@@ -4,9 +4,9 @@ A framework for Redux which makes the creataion and management of reducers and a
 
 ## Motivation
 
-At any scale, even in small applications but especially in larger ones, the matrix of elements composing a redux store can quickly become unmanageable. Teams & developers find themselves juggling an ungodly number of action types, action creators and reducers, which are often times scattered across hundreds of different files, workspaces and directories.
+At any scale, even in small applications but especially in larger ones, the matrix of elements composing a redux store can quickly become unmanageable.
 
-Coordinating all of these elements for consumption adds another layer of complexity as well. Path selectors for mapping state objects plus state/action mapping functions themselves can quickly add up to thousands of lines of code, even in well organized applications.
+Teams & developers find themselves juggling an ungodly number of action types, action creators, reducers and path selectors which are often times scattered across hundreds of different files, workspaces and directories.
 
 **Redux Pods** looks to solve this altogether by allowing reducers to declare actions and stateful effects all in one place.
 
@@ -30,30 +30,32 @@ Coordinating all of these elements for consumption adds another layer of complex
 
 #### Reducer
 
-```TS
+```ts
 import pod from 'redux-pods';
 
-export const countPod = pod({ count: 0 }).on({
-  setCount: (to: number) => (state) => {
-    state.count = to;
-  }
-});
-
+export const countPod = pod({ count: 0 })
+  .on({
+    add: (toAdd: number) => (state) => {
+      state.count += toAdd;
+    },
+    remove: (toRemove: number) => (state) => {
+      state.count -= toRemove;
+    }
+  });
 ```
 
 #### Consumer
 
-```JSX
+```tsx
 import { connect } from 'react-redux';
-import { countPod } from './reducer';
+import { countPod } from './countPod';
 
 function Counter(props) {
   return (
     <div>
-      <p>You clicked {props.count} times</p>
-      <button onClick={() => countPod.setCount(props.count + 1)}>
-        Click me
-      </button>
+      <p>Count: {props.count}</p>
+      <button onClick={() => countPod.add(1)}>Add</button>
+      <button onClick={() => countPod.remove(1)}>Remove</button>
     </div>
   );
 }
@@ -87,7 +89,6 @@ const store = createStore(
   rootReducer, 
   compose(
     applyMiddleware(middleware),
-    devTools(),
     pod.enhancer()
   )
 );
@@ -107,10 +108,10 @@ export default combineReducers({
 
 ## Actions
 
-Pod reducers can declare any number actions with corresponding stateful effects to apply to the state when the action is called. Pods can also declare a stateful effect for incoming action types from traditional reducers:
+Pod reducers can declare any number actions with corresponding effects to apply to the state when the action is called. Pods can also declare a stateful effect for incoming action types from traditional reducers:
 
 ```ts
-export const counter = pod({ count: 0 })
+export const countPod = pod({ count: 0 })
   .on({
     add: (toAdd: number) => (state) => {
       state.count += toAdd;
@@ -132,7 +133,7 @@ export const counter = pod({ count: 0 })
 You can also use a traditional reducer type function either for internal actions or external actions. Chained reducer effects are executed in the order they are declared and subsequent to internal actions.
 
 ```ts
-export const counter = pod({ count: 0 })
+export const countPod = pod({ count: 0 })
   .on({ 
     ... 
   })
@@ -155,22 +156,20 @@ export const counter = pod({ count: 0 })
 Pods can track either the specific actions of other pods, or the changes in state of other pods.
 
 ```ts
-import { counter } from './counter'
+import { countPod } from './countPod'
 
-const user = pod({ username: '', totalAdded: 0, highscore: 0 })
+export const userPod = pod({ username: '', totalAdded: 0, highscore: 0 })
   .on({
-    login: (username) => (state) => {
-      state.username = username; 
-      state.totalAdded = 0;
-      state.highscore = 0;
+    login: (user: UserObj) => (state) => {
+      ...
     }
   })
-  .track(counter, (counterState) => (state) => {
+  .track(countPod, (counterState) => (state) => {
     if (counterState.count > state.highscore) {
       state.highscore = counterState.count;
     }
   })
-  .track(counter.add, (toAdd) => (state) => {
+  .track(countPod.add, (toAdd) => (state) => {
     state.totalAdded += toAdd;
   })
 ```
