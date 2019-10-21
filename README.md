@@ -1,5 +1,7 @@
 # Redux Pods
 
+[![npm](https://img.shields.io/npm/v/redux-pods.svg)](https://www.npmjs.com/package/redux-pods) [![Minzipped size](https://img.shields.io/bundlephobia/minzip/redux-pods@1.0.5.svg)](https://bundlephobia.com/result?p=redux-pods) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
+
 A framework for Redux which makes the creataion and management of reducers and action creators seamless and easy.
 
 ## Motivation
