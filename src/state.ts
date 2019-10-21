@@ -1,11 +1,11 @@
-import _ from 'lodash'
+import get from 'lodash.get'
 
 export function mapStateFromPath(
   storeState: any,
   podPath: string,
   subPaths: string[] = []
 ) {
-  const state = _.get(storeState, podPath, undefined)
+  const state = get(storeState, podPath, undefined)
 
   if (!state) {
     throw new Error(

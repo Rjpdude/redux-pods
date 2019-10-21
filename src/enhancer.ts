@@ -4,7 +4,7 @@ import { PodReducer } from './reducer'
 import { INTERNAL_ACTION_TYPES } from './actiontype'
 import { PendingValue } from './pending_value'
 import { findPath } from './util'
-import _ from 'lodash'
+import get from 'lodash.get'
 
 export interface ReduxPodEnhancerOptions {
   initializeOn(action: AnyAction): boolean
@@ -105,10 +105,10 @@ function init(enhancerContext: ReduxPodEnhancerContext, store: Store) {
     const currentStoreState = store.getState()
 
     for (const path of enhancerContext.trackedPaths.keys()) {
-      enhancerContext.trackedPaths.set(path, _.get(currentStoreState, path))
+      enhancerContext.trackedPaths.set(path, get(currentStoreState, path))
 
       store.subscribe(() => {
-        const currentState = _.get(store.getState(), path)
+        const currentState = get(store.getState(), path)
         const previousState = enhancerContext.trackedPaths.get(path)
 
         if (currentState !== previousState) {

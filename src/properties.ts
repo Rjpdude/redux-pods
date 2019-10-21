@@ -17,16 +17,6 @@ import {
  */
 export class PodProperties<S, A extends ActionSet<S>> {
   /**
-   * Pod properties class constructor accepts a partial properties object and applies
-   * the obj. members to itself.
-   *
-   * @param properties Partial properties object.
-   */
-  constructor(properties: Partial<PodProperties<S, A>>) {
-    Object.assign(this, properties)
-  }
-
-  /**
    * The initial state to initialize the root reducer with.
    */
   initialState: S
@@ -50,4 +40,14 @@ export class PodProperties<S, A extends ActionSet<S>> {
    * A map obj. of pod instances to track and coinciding tracking effects.
    */
   trackers?: Map<PodInstance, ResolvedPodTracker<any, S>>
+
+  /**
+   * Pod properties class constructor accepts a partial properties object and applies
+   * the obj. members to itself.
+   *
+   * @param properties Partial properties object.
+   */
+  constructor(properties: Partial<PodProperties<S, A>>) {
+    Object.assign(this, properties)
+  }
 }

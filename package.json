@@ -1,6 +1,6 @@
 {
   "name": "redux-pods",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "author": "Ryan J. Pridgen",
   "license": "MIT",
   "description": "An integrated framework for the creation and management of Redux Reducers.",
@@ -31,13 +31,13 @@
   },
   "dependencies": {
     "immer": "^4.0.0",
-    "lodash": "^4.17.15",
+    "lodash.get": "^4.4.2",
     "redux": "^4.0.0"
   },
   "devDependencies": {
     "@types/enzyme": "^3.10.1",
     "@types/jest": "^24.0.15",
-    "@types/lodash": "^4.14.144",
+    "@types/lodash.get": "^4.4.6",
     "enzyme": "^3.10.0",
     "jest": "^24.8.0",
     "prettier": "^1.18.2",
