@@ -1,4 +1,4 @@
-import pod, { PodReducer, PodProperties } from '../..'
+import pod, { PodReducer, PodProperties } from '../../src'
 
 describe('[unit] index', () => {
   test('supplies default origin pod function', () => {

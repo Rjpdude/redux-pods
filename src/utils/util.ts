@@ -1,12 +1,12 @@
-import { PodReducer } from './reducer'
-import { ProxiedAction } from './action'
+import { PodReducer } from '../reducer/reducer'
+import { ProxiedAction } from '../actions/proxied_action'
 
 import {
   ChainedPod,
   ActionSet,
   Effect,
   ExposedActionCreator
-} from './interfaces'
+} from '../internal/interfaces'
 
 export function mergeEffects<E extends Effect<any, any>>(
   existingEffect: E,

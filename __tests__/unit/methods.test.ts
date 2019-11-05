@@ -1,4 +1,4 @@
-import { PodReducer, PodMethods, PodProperties } from '../../'
+import { PodReducer, PodMethods, PodProperties } from '../../src'
 
 function createMethodsInstance(
   props: PodProperties<any, any> = { initialState: '' }
@@ -28,6 +28,7 @@ describe('[unit] methods class', () => {
         // @ts-ignore
         createMethodsInstance({ initialState, path: 'first' }).mapState(
           mockState,
+          // @ts-ignore
           { incomingOwnProp: '' }
         )
       ).toBe(initialState)

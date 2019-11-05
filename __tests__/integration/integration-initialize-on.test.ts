@@ -1,5 +1,5 @@
 import { createStore, combineReducers } from 'redux'
-import pod from '../..'
+import pod from '../../src'
 
 const generateStore = (initializeOn: (action: any) => boolean) => {
   const reducers = {

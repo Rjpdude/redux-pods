@@ -1,10 +1,11 @@
 import { AnyAction } from 'redux'
+
 import {
   ActionSet,
   ExplicitlyTypedAction,
   ProxiedActionSet,
   Effect
-} from './interfaces'
+} from '../internal/interfaces'
 
 export function effect<S, A = AnyAction>(func: Effect<S, A>): Effect<S, A> {
   return func

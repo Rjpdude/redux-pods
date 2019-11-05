@@ -1,5 +1,5 @@
-import { ProxiedAction } from './action'
-import { ActionSet, PodInstance, ProxiedActionSet } from './interfaces'
+import { ProxiedAction } from './proxied_action'
+import { ActionSet, PodInstance, ProxiedActionSet } from '../internal/interfaces'
 
 export function chainedActionSet<
   OwnActionSet extends ActionSet<any>,

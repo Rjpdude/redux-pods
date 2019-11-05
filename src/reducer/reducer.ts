@@ -1,12 +1,18 @@
 import produce from 'immer'
 
-import { Reducer as ReduxReducer, AnyAction } from 'redux'
-import { ChainedPod, ActionSet, ExposedActionSet } from './interfaces'
-import { INTERNAL_ACTION_TYPES } from './actiontype'
-import { FunctionProducer } from './function_producer'
+import { AnyAction } from 'redux'
 import { PodMethods } from './methods'
 import { PodProperties } from './properties'
-import { mergeEffects } from './util'
+import { INTERNAL_ACTION_TYPES } from '../utils/action_type'
+import { FunctionProducer } from '../utils/function_producer'
+import { mergeEffects } from '../utils/util'
+
+import {
+  Reducer,
+  ChainedPod,
+  ActionSet,
+  ExposedActionSet
+} from '../internal/interfaces'
 
 /**
  * The root pod reducer class as a `FunctionProducer`. The main purpose of this class is
@@ -21,7 +27,7 @@ import { mergeEffects } from './util'
  */
 export class PodReducer<S, A extends ActionSet<S>> extends FunctionProducer<
   ExposedActionSet<A> & PodMethods<S, A>,
-  ReduxReducer<S>
+  Reducer<S>
 > {
   /**
    * Pod reducer class constructor providing the root reducer function to the

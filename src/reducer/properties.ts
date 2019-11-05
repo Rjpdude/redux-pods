@@ -6,7 +6,7 @@ import {
   ProxiedActionSet,
   ResolvedPodTracker,
   Effect
-} from './interfaces'
+} from '../internal/interfaces'
 
 /**
  * The `PodProperties` class contains all of the central properties for each pod

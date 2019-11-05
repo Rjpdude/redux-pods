@@ -1,5 +1,5 @@
-import { INTERNAL_ACTION_TYPES } from './actiontype'
-import { InternalTrackerAction } from './enhancer'
+import { INTERNAL_ACTION_TYPES } from '../utils/action_type'
+import { InternalTrackerAction } from '../internal/enhancer'
 import { effect } from './effect'
 
 import {
@@ -8,7 +8,7 @@ import {
   ExposedActionCreator,
   ExposedActionCreatorRes,
   ResolvedActionTracker
-} from './interfaces'
+} from '../internal/interfaces'
 
 export function podTrackerEffect<S, TState>(
   pod: ChainedPod<TState, any>,

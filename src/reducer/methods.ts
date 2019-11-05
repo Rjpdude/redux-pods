@@ -1,10 +1,10 @@
 import { AnyAction } from 'redux'
 import { PodReducer } from './reducer'
-import { isPod, isActionSet, isProxiedAction } from './util'
-import { mapStateFromPath, mapStateFromFunction } from './state'
-import { chainedActionSet } from './actionset'
-import { podTrackerEffect, actionTrackerEffect } from './tracker'
-import { actionTypeEffect, internalReducerEffect } from './effect'
+import { isPod, isActionSet, isProxiedAction } from '../utils/util'
+import { mapStateFromPath, mapStateFromFunction } from '../actions/map_state'
+import { chainedActionSet } from '../actions/action_set'
+import { podTrackerEffect, actionTrackerEffect } from '../actions/tracker'
+import { actionTypeEffect, internalReducerEffect } from '../actions/effect'
 
 import {
   ChainedPod,
@@ -14,7 +14,7 @@ import {
   ResolvedPodTracker,
   ResolvedActionTracker,
   ExposedActionCreator
-} from './interfaces'
+} from '../internal/interfaces'
 
 export class PodMethods<S, A extends ActionSet<S>> {
   constructor(instance: PodReducer<S, A>) {

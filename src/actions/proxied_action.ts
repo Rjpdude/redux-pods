@@ -1,14 +1,14 @@
-import * as actionTypes from './actiontype'
 
 import { AnyAction } from 'redux'
-import { FunctionProducer } from './function_producer'
+import { FunctionProducer } from '../utils/function_producer'
+import * as actionTypes from '../utils/action_type'
 
 import {
   PodInstance,
   ActionCreator,
   InternalProxiedAction,
   ProxiedActionMembers
-} from './interfaces'
+} from '../internal/interfaces'
 
 export class ProxiedAction<A extends ActionCreator> extends FunctionProducer<
   ProxiedActionMembers<A>,

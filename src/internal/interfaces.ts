@@ -1,11 +1,15 @@
-import { Reducer, AnyAction } from 'redux'
-import { ProxiedAction } from './action'
-import { PodReducer } from './reducer'
-import { PodMethods } from './methods'
+import { AnyAction } from 'redux'
+import { ProxiedAction } from '../actions/proxied_action'
+import { PodReducer } from '../reducer/reducer'
+import { PodMethods } from '../reducer/methods'
+
+// -- Redux Reducer Type -- //
+
+export type Reducer<S> = (state: S, action: AnyAction) => S
 
 // -- Pod Types -- //
 
-export type ChainedPod<S, A extends ActionSet<S>> = Reducer<S, AnyAction> &
+export type ChainedPod<S, A extends ActionSet<S>> = Reducer<S> &
   ExposedActionSet<A> &
   PodMethods<S, A>
 
@@ -30,6 +34,8 @@ export interface ExplicitlyTypedAction<T> {
 export interface Effect<S, A> {
   (draft: S, arg?: A): S | void
 }
+
+export type StateResetAction = () => Effect<any, any>
 
 // -- Tracker Types -- //
 

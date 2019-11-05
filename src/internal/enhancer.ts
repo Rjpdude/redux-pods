@@ -1,9 +1,9 @@
 import { Dispatch, Store, StoreEnhancer, AnyAction } from 'redux'
 import { PodInstance } from './interfaces'
-import { PodReducer } from './reducer'
-import { INTERNAL_ACTION_TYPES } from './actiontype'
-import { PendingValue } from './pending_value'
-import { findPath } from './util'
+import { PodReducer } from '../reducer/reducer'
+import { INTERNAL_ACTION_TYPES } from '../utils/action_type'
+import { PendingValue } from '../utils/pending_value'
+import { findPath } from '../utils/util'
 import get from 'lodash.get'
 
 export interface ReduxPodEnhancerOptions {

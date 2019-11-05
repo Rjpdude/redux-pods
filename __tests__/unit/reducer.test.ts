@@ -4,7 +4,7 @@ import pod, {
   PodMethods,
   ProxiedAction,
   INTERNAL_ACTION_TYPES
-} from '../..'
+} from '../../src'
 
 describe('[unit] reducer class', () => {
   test('instantiates function producer super class', () => {

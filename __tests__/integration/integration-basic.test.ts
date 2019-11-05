@@ -1,29 +1,28 @@
 import { createStore, combineReducers } from 'redux'
-import pod from '../..'
+import pod from '../../src'
 
 const generateStore = () => {
-  const reducers = {
-    counter: pod({ count: 0 })
-      .on({
-        add: (toAdd: number) => (state) => {
-          state.count += toAdd
-        },
-        remove: (toRemove: number) => (state) => {
-          state.count -= toRemove
-        }
-      })
-      .on('classic-reducer-action', (state) => {
-        state.count = 500
-      }),
-
-    classic: (state = { prop: 0 }, action: any) => {
-      if (action.type === 'classic-reducer-action') {
-        return { ...state, prop: 5 }
+  const counter = pod({ count: 0 }, 'reset')
+    .on({
+      add: (toAdd: number) => (state) => {
+        state.count += toAdd
+      },
+      remove: (toRemove: number) => (state) => {
+        state.count -= toRemove
       }
-      return state
+    })
+    .on('classic-reducer-action', (state) => {
+      state.count = 500
+    })
+
+  const classic = (state = { prop: 0 }, action: any) => {
+    if (action.type === 'classic-reducer-action') {
+      return { ...state, prop: 5 }
     }
+    return state
   }
 
+  const reducers = { counter, classic }
   const store = createStore(combineReducers(reducers), pod.enhancer())
 
   return {
@@ -71,5 +70,15 @@ describe('[integration] basic app store', () => {
 
     expect(store.getState().counter.count).toBe(500)
     expect(store.getState().classic.prop).toBe(5)
+  })
+
+  test('state reset action', () => {
+    const { store, counter, originalState } = generateStore()
+
+    counter.add(5)
+    expect(store.getState().counter.count).toBe(5)
+
+    counter.reset()
+    expect(store.getState().counter).toBe(originalState.counter)
   })
 })
