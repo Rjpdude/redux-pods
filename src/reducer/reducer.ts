@@ -3,6 +3,7 @@ import produce from 'immer'
 import { AnyAction } from 'redux'
 import { PodMethods } from './methods'
 import { PodProperties } from './properties'
+import { ProxiedAction } from '../actions/proxied_action'
 import { INTERNAL_ACTION_TYPES } from '../utils/action_type'
 import { FunctionProducer } from '../utils/function_producer'
 import { mergeEffects } from '../utils/util'
@@ -41,6 +42,7 @@ export class PodReducer<S, A extends ActionSet<S>> extends FunctionProducer<
         ? state
         : this.handleAction(state, action)
     )
+    this.assignNewActionSet()
   }
 
   /**
@@ -107,6 +109,23 @@ export class PodReducer<S, A extends ActionSet<S>> extends FunctionProducer<
         ...propsToMerge
       })
     ).getBoundFunc()
+  }
+
+  /**
+   * Clones the current set of actions and assigns the new instance.
+   */
+  assignNewActionSet() {
+    if (this.props.actionSet) {
+      const instance = () => this
+
+      this.props.actionSet = Object.values(this.props.actionSet).reduce(
+        (set, action) => ({
+          ...set,
+          [action.getType()]: action.clone(instance)
+        }),
+        {}
+      )
+    }
   }
 
   /**

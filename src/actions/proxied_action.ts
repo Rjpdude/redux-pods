@@ -1,8 +1,6 @@
-
 import { AnyAction } from 'redux'
 import { FunctionProducer } from '../utils/function_producer'
 import * as actionTypes from '../utils/action_type'
-
 import {
   PodInstance,
   ActionCreator,
@@ -34,9 +32,16 @@ export class ProxiedAction<A extends ActionCreator> extends FunctionProducer<
     return this.actionCreator
   }
 
-  proxiedStatefulAction(args: any) {
+  getBaseAction() {
     return {
       type: actionTypes.getActionKey(this.type),
+      path: this.instance().getProps().path,
+    }
+  }
+
+  proxiedStatefulAction(args: any) {
+    return {
+      ...this.getBaseAction(),
       arguments: args
     }
   }
@@ -44,7 +49,7 @@ export class ProxiedAction<A extends ActionCreator> extends FunctionProducer<
   proxiedBasicAction(args: any) {
     return {
       ...this.actionCreator(...args),
-      type: actionTypes.getActionKey(this.type)
+      ...this.getBaseAction(),
     }
   }
 
@@ -62,6 +67,10 @@ export class ProxiedAction<A extends ActionCreator> extends FunctionProducer<
       actionTypes.isActionOf(this.instance().getProps().path, action) &&
       actionTypes.getReversedActionKey(action.type) === this.type
     )
+  }
+
+  clone(instance: PodInstance) {
+    return new ProxiedAction(this.type, instance, this.actionCreator)
   }
 
   boundFunctionMembers(): ProxiedActionMembers<A> {
