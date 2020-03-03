@@ -7,7 +7,7 @@ export function mapStateFromPath(
 ) {
   const state = get(storeState, podPath, undefined)
 
-  if (!state) {
+  if (state === undefined) {
     throw new Error(
       `Unable to locate state from path ${podPath}. Your redux store is likely uninitialized or misconfigured.`
     )
