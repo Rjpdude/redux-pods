@@ -10,7 +10,7 @@
 import { state } from 'redux-pods'
 
 const gameState = state({ 
-  score: 0 
+  score: 0
 })
 
 const gameActions = gameState.actions({
@@ -85,15 +85,36 @@ function mapStateToProps(storeState) {
 Async actions can make changes to a state by using the state's `resolve` callback function.
 
 ```ts
-const user = state({ 
+const userState = state({ 
   username: ''
 })
 
 const loadUser = async (key: string) => {
   const userData = await loadUserData(key)
 
-  user.resolve((draft) => {
+  userState.resolve((draft) => {
     draft.username = userData.username
   })
 }
 ```
+
+## Trackers
+
+Pod states can track changes to other pod states through their `track` method:
+
+```ts
+const userState = state({
+  highscore: 0
+})
+
+userState.track(gameState, (gameState, prevGameState) => {
+  if (gameState.score > prevGameState.score) {
+    userState.draft.highscore = gameState.score
+  }
+})
+```
+
+The above tracker tracks changes to the `gameState`, and sets the user's highscore when the game state's
+`count` property is higher than the the previous count.
+
+Note that trackers can only update their own state - the tracked state can only be read, not updated.

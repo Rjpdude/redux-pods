@@ -47,7 +47,7 @@ export class Pods {
     return actionFn
   }
 
-  bindTrackerFn(fn: (podState: any) => any, state: State<any>, trackedState: State<any>) {
+  bindTrackerFn(fn: (podState: any, prevPodState: any) => any, state: State<any>, trackedState: State<any>) {
     const id = uuid()
 
     const actionFn = () => this.bindFn(state, {
@@ -60,7 +60,7 @@ export class Pods {
     }
     this.stateTrackers.get(trackedState).set(id, state)
 
-    state.registerTracker(id, actionFn, () => fn(trackedState.current))
+    state.registerTracker(id, actionFn, () => fn(trackedState.current, trackedState.previous))
     return actionFn
   }
 
@@ -76,7 +76,10 @@ export class Pods {
 
   bindFn(state: State<any>, action: any) {
     this.store.dispatch(action)
-    state.triggerHooks()
-    this.resolveTrackers(state)
+
+    if (!Object.is(state.current, state.previous)) {
+      state.triggerHooks()
+      this.resolveTrackers(state)
+    }
   }
 }

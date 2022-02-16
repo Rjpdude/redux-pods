@@ -1,6 +1,6 @@
 import pods, { usePods } from '.'
 import { createDraft, finishDraft, Draft } from 'immer'
-import { DraftFn, StatefulActionSet, ActionSet } from './types'
+import { DraftFn, StatefulActionSet, ActionSet, Exposed } from './types'
 import { ActionTypes } from './config'
 import { findPath } from './util'
 import get from 'lodash.get'
@@ -9,6 +9,7 @@ export class State<S> {
   private initialState: Readonly<S>
   private _draft: Draft<S>
   public current: Readonly<S>
+  public previous: Readonly<S>
   private path: string
   private actionMap = new Map<string, any>()
   private pendingDraftFn: { id: string, res: DraftFn<S> }
@@ -89,7 +90,7 @@ export class State<S> {
     return this.current
   }
 
-  resolveActionHandler(action: any) {
+  private resolveActionHandler(action: any) {
     if (action.type.startsWith(ActionTypes.ActionHandler) && this.actionMap.has(action.id)) {
       const actionCreator = this.actionMap.get(action.id)
 
@@ -101,7 +102,7 @@ export class State<S> {
     }
   }
 
-  resolveDraftAction(action: any) {
+  private resolveDraftAction(action: any) {
     if (action.type === ActionTypes.Draft && this.pendingDraftFn && this.pendingDraftFn.id === action.id) {
       this.resolveAction(() => {
         this.pendingDraftFn.res(this.draft)
@@ -109,7 +110,7 @@ export class State<S> {
     }
   }
 
-  resolveStateTrackerAction(action: any) {
+  private resolveStateTrackerAction(action: any) {
     if (action.type === ActionTypes.StateTracker && this.trackers.has(action.id)) {
       this.resolveAction(() => {
         this.trackers.get(action.id)[1]()
@@ -117,8 +118,9 @@ export class State<S> {
     }
   }
 
-  resolveAction(fn: () => void) {
+  private resolveAction(fn: () => void) {
     this.locked = false
+    this.previous = this.current
 
     try {
       fn()
@@ -144,7 +146,7 @@ export class State<S> {
     }), {}) as ActionSet<O>
   }
 
-  track<P>(state: State<P>, fn: (podState: Readonly<P>) => S | void) {
+  track<P>(state: Exposed<State<P>>, fn: (podState: Readonly<P>, prevPodState?: Readonly<P>) => S | void) {
     if (!(state instanceof State) || (state as any) === this) {
       throw new Error('Trackers must reference a different state object.')
     }

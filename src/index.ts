@@ -1,15 +1,12 @@
 import { Pods } from './pods'
 import { State } from './state'
 import { reactError } from './util'
+import { Exposed, InferStates } from './types'
 
 export * from './exports'
 
-export function state<S>(initialState: S) {
+export function state<S>(initialState: S): Exposed<State<S>> {
   return new State(initialState)
-}
-
-type InferStates<A> = {
-  [K in keyof A]: A[K] extends State<infer T> ? T : unknown
 }
 
 export function usePods<S extends Array<State<any>>>(...args: S): 
