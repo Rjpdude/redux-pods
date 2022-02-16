@@ -16,7 +16,12 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "downlevelIteration": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "typeRoots": [      
+      "./node-modules/@types/",
+      "./src/@types/"
+    ],      
+    "types": ["jest", "node", "@types/jest"]
   },
   "include": ["src"],
   "exclude": ["node_modules", "__tests__"]
