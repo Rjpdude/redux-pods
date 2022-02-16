@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { act } from 'react-dom/test-utils'
 import { state, usePods } from '..'
 import { generateStore } from '../test-utils'
 import { mount } from 'enzyme'
@@ -58,7 +59,9 @@ describe('usePods and State use react hook', () => {
 
     expect(output.find(Component).text()).toBe('ryan')
 
-    actions.setUsername('bob')
+    act(() => {
+      actions.setUsername('bob')
+    })
 
     expect(output.find(Component).text()).toBe('bob')
   })

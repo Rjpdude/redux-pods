@@ -153,8 +153,8 @@ export class State<S> {
     pods.bindTrackerFn(fn, this, state)
   }
 
-  use = () => {
-    return usePods(this as State<S>)
+  use = (): S => {
+    return usePods(this)
   }
 
   getPath() {

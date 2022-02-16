@@ -28,17 +28,15 @@ const gameActions = gameState.actions({
 })
 ```
 
-After the `game` state has been included as a reducer, it's state and actions can be used within a React
+After `gameState` has been included as a reducer, it's state and actions can be used within a React
 UI component without the need for `mapStateToProps` or `mapDispatchToProps`:
 
 ```tsx
-import { gameState, gameActions } from '.'
-
 function Component() {
-  const game = gameState.use()
+  const { score } = gameState.use()
 
   return (
-    <button onClick={() => gameActions.add(1)}>{game.score}</button>
+    <button onClick={() => gameActions.add(1)}>{score}</button>
   )
 }
 ```
@@ -80,6 +78,13 @@ function mapStateToProps(storeState) {
 
 # Actions
 
+Pod states can be updated in a multitude of ways - action handlers, async functions and trackers. The state's `draft` property -
+a mutable copy of the actual state object - is made available within action handlers. Drafts can be mutated in any way without
+effecting the actual state object itself.
+
+**Note** state `draft` properties can only be accessed and updated within action handlers. Attemps to access the `draft` property
+outside action handlers will result in an error.
+
 ## Async Actions
 
 Async actions can make changes to a state by using the state's `resolve` callback function.
@@ -97,6 +102,27 @@ const loadUser = async (key: string) => {
   })
 }
 ```
+
+A state's `resolve` method can be called from anywhere, not just within async function. For example, it can also be called within
+a component's internal callback function:
+
+```tsx
+import { gameState, gameActions } from '.'
+
+function Component() {
+  const { score } = gameState.use()
+
+  const onClick = () => {
+    gameActions.resolve((draft) => {
+      draft.score += 50
+    })
+  }
+
+  return <button onClick={onClick}>{score}</button>
+}
+```
+
+The above component will increase the game state's `score` property by 50 everytime the button is clicked.
 
 ## Trackers
 

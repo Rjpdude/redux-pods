@@ -18,5 +18,5 @@ export type Exposed<S extends State<any>> = Omit<S,
 >
 
 export type InferStates<A> = {
-  [K in keyof A]: A[K] extends State<infer T> ? T : unknown
+  [K in keyof A]: A[K] extends Exposed<State<infer T>> ? T : unknown
 }

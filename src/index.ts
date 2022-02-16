@@ -9,14 +9,14 @@ export function state<S>(initialState: S): Exposed<State<S>> {
   return new State(initialState)
 }
 
-export function usePods<S extends Array<State<any>>>(...args: S): 
-  S extends [State<infer T>] 
-    ? T 
-    : InferStates<S> 
+export function usePods<A extends any[]>(...args: A): 
+  A extends [infer T] 
+    ? T extends Exposed<State<infer S>> ? S : any
+    : InferStates<A> 
 {
   return args.length === 1 
-    ? podStateHook(args[0]) 
-    : args.map(podStateHook) as any
+    ? podStateHook(args[0] as State<any>) 
+    : args.map(podStateHook)
 }
 
 function podStateHook<S>(state: State<S>): S {
