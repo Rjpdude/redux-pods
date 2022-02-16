@@ -1,4 +1,4 @@
-import pods from '.'
+import pods, { usePods } from '.'
 import { createDraft, finishDraft, Draft } from 'immer'
 import { DraftFn, StatefulActionSet, ActionSet } from './types'
 import { ActionTypes } from './config'
@@ -149,6 +149,10 @@ export class State<S> {
       throw new Error('Trackers must reference a different state object.')
     }
     pods.bindTrackerFn(fn, this, state)
+  }
+
+  use = () => {
+    return usePods(this as State<S>)
   }
 
   getPath() {

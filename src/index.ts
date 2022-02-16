@@ -1,5 +1,6 @@
 import { Pods } from './pods'
 import { State } from './state'
+import { reactError } from './util'
 
 export * from './exports'
 
@@ -7,11 +8,21 @@ export function state<S>(initialState: S) {
   return new State(initialState)
 }
 
-function reactError() {
-  throw new Error('The usePod function requires React 16.8.0 or higher.')
+type InferStates<A> = {
+  [K in keyof A]: A[K] extends State<infer T> ? T : unknown
 }
 
-export function usePod<S>(state: State<S>): S {
+export function usePods<S extends Array<State<any>>>(...args: S): 
+  S extends [State<infer T>] 
+    ? T 
+    : InferStates<S> 
+{
+  return args.length === 1 
+    ? podStateHook(args[0]) 
+    : args.map(podStateHook) as any
+}
+
+function podStateHook<S>(state: State<S>): S {
   let react: any
   try {
     react = require('react')

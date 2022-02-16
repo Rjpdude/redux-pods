@@ -1,3 +1,7 @@
+export function reactError() {
+  throw new Error('The usePod function requires React 16.8.0 or higher.')
+}
+
 export function findPath(obj: any, toFind: any, ...path: string[]): string {
   if (toFind === undefined || toFind === null) {
     return ''

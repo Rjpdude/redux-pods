@@ -9,11 +9,11 @@
 ```ts
 import { state } from 'redux-pods'
 
-const game = state({ 
+const gameState = state({ 
   score: 0 
 })
 
-const gameActions = game.actions({
+const gameActions = gameState.actions({
   add: (points: number) => {
     game.draft.score += points
   },
@@ -32,16 +32,53 @@ After the `game` state has been included as a reducer, it's state and actions ca
 UI component without the need for `mapStateToProps` or `mapDispatchToProps`:
 
 ```tsx
-import { usePod } from 'redux-pods'
+import { gameState, gameActions } from '.'
 
-function Interface() {
-  const gameState = usePod(game)
+function Component() {
+  const game = gameState.use()
 
   return (
-    <button onClick={() => gameActions.add(1)}>{gameState.score}</button>
+    <button onClick={() => gameActions.add(1)}>{game.score}</button>
   )
 }
 ```
+
+# State Hooks & Mapping
+
+There are multiple avenues available for accessing a pod state.
+
+## React Hooks
+
+One of the primary features of pods are their ability to supply their state through React hooks. A pod state can be hooked
+into a React component in one of two ways - individually through a state's `use` method (as domonstrated above), or with
+multiple pod states:
+
+```tsx
+import { usePods } from 'redux-pods'
+
+function Component() {
+  const [user, game] = usePods(userState, gameState)
+
+  return (
+    <span>{user.username} {game.score}</span>
+  )
+}
+```
+
+## Map
+
+Pods are aware of their location within the redux state tree. This is especially helpful for deeply nested states that need
+to be mapped, for example, within a `mapStateToProps` function:
+
+```ts
+function mapStateToProps(storeState) {
+  return {
+    game: gameState.map(storeState)
+  }
+}
+```
+
+# Actions
 
 ## Async Actions
 
