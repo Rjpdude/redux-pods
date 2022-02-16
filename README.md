@@ -14,12 +14,16 @@ const game = state({
 })
 
 const gameActions = game.actions({
-  add: (by: number) => {
-    game.draft.score += by
+  add: (points: number) => {
+    game.draft.score += points
   },
 
-  subtract: (by: number) => {
-    game.draft.score -= by
+  subtract: (points: number) => {
+    game.draft.score -= points
+  },
+
+  clear: () => {
+    game.draft.score = 0
   }
 })
 ```
