@@ -7,19 +7,34 @@
 ## Example
 
 ```ts
-import { state } from 'redux-pods';
+import { state } from 'redux-pods'
 
 const game = state({ 
   score: 0 
-});
+})
 
-const gameActions = game.on({
+const gameActions = game.actions({
   add: (by: number) => {
-    game.draft.score += by;
+    game.draft.score += by
   },
 
   subtract: (by: number) => {
-    game.draft.score -= by;
+    game.draft.score -= by
   }
-});
+})
+```
+
+After the `game` state has been included as a reducer, it's state and actions can be used within a React
+UI component without the need for `mapStateToProps` or `mapDispatchToProps`:
+
+```tsx
+import { usePod } from 'redux-pods'
+
+function Interface() {
+  const gameState = usePod(game)
+
+  return (
+    <button onClick={() => gameActions.add(1)}>{gameState.score}</button>
+  )
+}
 ```

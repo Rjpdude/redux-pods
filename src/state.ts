@@ -137,7 +137,7 @@ export class State<S> {
     pods.bindDraftFn(draftFn, this)()
   }
 
-  on<O extends StatefulActionSet<S>>(obj: O): ActionSet<O> {
+  actions<O extends StatefulActionSet<S>>(obj: O): ActionSet<O> {
     return Object.entries(obj).reduce((actionSet, [key,fn]) => ({
       ...actionSet,
       [key]: pods.bindAction(key, fn, this),
