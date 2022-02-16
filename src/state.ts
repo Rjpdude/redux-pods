@@ -1,4 +1,4 @@
-import pods, { ActionCreator } from '.'
+import pods from '.'
 import { createDraft, finishDraft, Draft } from 'immer'
 import { DraftFn, StatefulActionSet, ActionSet } from './types'
 import { ActionTypes } from './config'
@@ -144,14 +144,11 @@ export class State<S> {
     }), {}) as ActionSet<O>
   }
 
-  track<A extends ActionCreator<any>>(action: A, fn: (...args: Parameters<A>) => S | void): void
-  track<P>(state: State<P>, fn: (podState: Readonly<P>) => S | void): void
-  track(arg: any, fn: any) {
-    if (typeof arg === 'function') {
-
-    } else if (arg instanceof State) {
-      pods.bindTrackerFn(fn, this, arg)
+  track<P>(state: State<P>, fn: (podState: Readonly<P>) => S | void) {
+    if (!(state instanceof State) || (state as any) === this) {
+      throw new Error('Trackers must reference a different state object.')
     }
+    pods.bindTrackerFn(fn, this, state)
   }
 
   getPath() {
