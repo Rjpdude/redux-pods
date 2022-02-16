@@ -42,3 +42,21 @@ function Interface() {
   )
 }
 ```
+
+## Async Actions
+
+Async actions can make changes to a state by using the state's `resolve` callback function.
+
+```ts
+const user = state({ 
+  username: ''
+})
+
+const loadUser = async (key: string) => {
+  const userData = await loadUserData(key)
+
+  user.resolve((draft) => {
+    draft.username = userData.username
+  })
+}
+```
