@@ -1,20 +1,20 @@
 import pods, { usePods } from '.'
+import { v4 as uuid } from 'uuid'
 import { createDraft, finishDraft, Draft } from 'immer'
-import { DraftFn, StatefulActionSet, ActionSet, Exposed } from './types'
-import { ActionTypes } from './config'
+import { ActionResolver, InternalActionType, DraftFn, StatefulActionSet, ActionSet, Exposed, StateTrackerFn, HookFn } from './types'
 import { findPath } from './util'
 import get from 'lodash.get'
 
 export class State<S> {
+  public readonly id = uuid()
+
   private initialState: Readonly<S>
   private _draft: Draft<S>
   public current: Readonly<S>
   public previous: Readonly<S>
+  private trackerFn: StateTrackerFn<S, any>
+  private hooks: Set<HookFn<S>>
   private path: string
-  private actionMap = new Map<string, any>()
-  private pendingDraftFn: { id: string, res: DraftFn<S> }
-  private trackers = new Map<string, [any, any]>()
-  private hooks: Array<(state: S) => void> = []
   private locked = true
 
   constructor(initialState: S) {
@@ -38,101 +38,104 @@ export class State<S> {
     return get(storeState, this.getPath())
   }
 
-  registerAction(id: string, fn: any) {
-    this.actionMap.set(id, fn)
-  }
-
-  registerDraftFn(fn: { id: string, res: DraftFn<S> }) {
-    this.pendingDraftFn = fn
-  }
-
-  registerTracker(id: string, actionFn: (...args: any) => any, resFn: (state: any) => void) {
-    this.trackers.set(id, [actionFn, resFn])
-  }
-
-  registerHook(fn: (state: S) => void) {
-    if (typeof fn === 'function' && !this.hooks.includes(fn)) {
-      this.hooks.push(fn)
+  sideEffects() {
+    if (!Object.is(this.current, this.previous)) {
+      this.triggerHooks()
+      this.triggerTrackers()
     }
   }
 
-  unregisterHook(fn: (state: S) => void) {
-    if (typeof fn === 'function') {
-      const index = this.hooks.indexOf(fn)
-      if (index > -1) {
-        this.hooks.splice(index, 1)
-      }
-    }
-  }
-
-  triggerTracker(id: string) {
-    this.trackers.get(id)[0]()
-  }
-
-  triggerHooks() {
-    this.hooks.forEach((fn) => {
-      try {
-        if (typeof fn === 'function') {
-          fn(this.current)
+  private triggerHooks() {
+    if (this.hooks) {
+      for (let hookFn of this.hooks) {
+        try {
+          hookFn(this.current)
+        } catch (error) {
+          console.error('Error resolving hook resolver function', error)
         }
-      } catch (error) {
-        console.error('Error resolving hook callback fn.', error)
-      }
-    })
-  }
-
-  reducer = (_state: S, action: any) => {
-    if (action.type.startsWith('pod-') && action.id) {
-      this.resolveActionHandler(action)
-      this.resolveDraftAction(action)
-      this.resolveStateTrackerAction(action)
-    }
-    return this.current
-  }
-
-  private resolveActionHandler(action: any) {
-    if (action.type.startsWith(ActionTypes.ActionHandler) && this.actionMap.has(action.id)) {
-      const actionCreator = this.actionMap.get(action.id)
-
-      if (actionCreator) {
-        this.resolveAction(() => {
-          actionCreator(...action.args)
-        })
       }
     }
   }
 
-  private resolveDraftAction(action: any) {
-    if (action.type === ActionTypes.Draft && this.pendingDraftFn && this.pendingDraftFn.id === action.id) {
-      this.resolveAction(() => {
-        this.pendingDraftFn.res(this.draft)
-      })
+  private triggerTrackers() {
+    if (this.trackerFn) {
+      this.trackerFn(this.current, this.previous)
     }
   }
 
-  private resolveStateTrackerAction(action: any) {
-    if (action.type === ActionTypes.StateTracker && this.trackers.has(action.id)) {
-      this.resolveAction(() => {
-        this.trackers.get(action.id)[1]()
-      })
+  registerHook(hookFn: HookFn<S>) {
+    if (typeof hookFn !== 'function') {
+      throw new Error('Hook function resolvers must be of type function.')
     }
+
+    if (!this.hooks) {
+      this.hooks = new Set()
+    }
+
+    if (this.hooks.has(hookFn)) {
+      throw new Error('This hook function resolver has already been registered.')
+    }
+
+    this.hooks.add(hookFn)
   }
 
-  private resolveAction(fn: () => void) {
-    this.locked = false
-    this.previous = this.current
+  unregisterHook(hookFn: HookFn<S>) {
+    if (typeof hookFn !== 'function') {
+      throw new Error(`Unable to unregister hook resolver function of type ${typeof hookFn}`)
+    }
 
+    if (!this.hooks || !this.hooks.has(hookFn)) {
+      throw new Error('Unable to locate hook resolver function.')
+    }
+    
+    this.hooks.delete(hookFn)
+  }
+
+  registerTrackerAction(trackerAction: StateTrackerFn<S, any>) {
+    const currentFn = this.trackerFn
+
+    this.trackerFn = !currentFn 
+      ? trackerAction 
+      : (...states) => {
+        currentFn(...states)
+        trackerAction(...states)
+      }
+  }
+
+  reducer = (state: S = this.initialState, action: InternalActionType) => {
+    let res = state
     try {
-      fn()
-    } catch(error) {
-      console.log('Error resolving action handler.', error)
+      if (action.stateId === this.id) {
+        res = this.resolveAction(state, action.resolver)
+      }
+    } catch (error) {
+      console.error('Error resolving pod state action handler.', error)
     } finally {
-      this.locked = true
+      this.lock(res)
+    }
+    return res
+  }
+
+  private resolveAction(state: Readonly<S>, resolver: ActionResolver) {
+    if (typeof resolver !== 'function') {
+      throw new Error('Pod actions must contain a resolver of type function.')
     }
 
-    const res = this._draft ? finishDraft(this._draft) : this.current
+    this.unlock(state)
+    resolver()
+
+    return (this._draft ? finishDraft(this._draft) : state) as S
+  }
+
+  private unlock(state: Readonly<S>) {
+    this.locked = false
+    this.previous = state
+  }
+
+  private lock(state: Readonly<S>) {
+    this.locked = true
+    this.current = state
     this._draft = undefined
-    this.current = res as S
   }
 
   resolve(draftFn: DraftFn<S>) {
@@ -146,11 +149,11 @@ export class State<S> {
     }), {}) as ActionSet<O>
   }
 
-  track<P>(state: Exposed<State<P>>, fn: (podState: Readonly<P>, prevPodState?: Readonly<P>) => S | void) {
-    if (!(state instanceof State) || (state as any) === this) {
+  track<P>(trackedState: Exposed<State<P>>, trackerFn: StateTrackerFn<P, S>) {
+    if (!(trackedState instanceof State) || (trackedState as any) === this) {
       throw new Error('Trackers must reference a different state object.')
     }
-    pods.bindTrackerFn(fn, this, state)
+    pods.bindTrackerFn(trackerFn, this, trackedState)
   }
 
   use = (): S => {

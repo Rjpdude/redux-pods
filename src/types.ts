@@ -1,8 +1,24 @@
 import { Draft } from 'immer'
 import { State } from './state'
 
+export enum ActionTypes {
+  ActionHandler = 'pod-action-handler',
+  Draft = 'pod-action-draft',
+  StateTracker = 'pod-action-state-tracker',
+}
+
+export interface InternalActionType {
+  type: ActionTypes
+  stateId: string
+  actionKey?: string
+  resolver: ActionResolver
+}
+
+export type ActionResolver = () => void
 export type DraftFn<S> = (state: Draft<S>) => Draft<S> | void
 export type ActionCreator<S> = (...args: any[]) => S | void
+export type StateTrackerFn<T, S> = (podState: Readonly<T>, prevPodState?: Readonly<T>) => S | void
+export type HookFn<S> = (state: S) => void
 
 export interface StatefulActionSet<S> {
     [key: string]: ActionCreator<S>

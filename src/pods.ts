@@ -1,13 +1,10 @@
 import { Store } from 'redux'
 import { State } from './state'
-import { v4 as uuid } from 'uuid'
-import { DraftFn, ActionCreator } from './types'
-import { ActionTypes } from './config'
+import { ActionTypes, DraftFn, ActionCreator, StateTrackerFn } from './types'
 
 export class Pods {
   private store: Store
   private states: Array<State<any>> = []
-  private stateTrackers = new Map<State<any>, Map<string, State<any>>>()
 
   register(store: Store) {
     this.store = store
@@ -22,64 +19,45 @@ export class Pods {
     }
   }
 
-  bindAction(key: string, action: ActionCreator<any>, state: State<any>) {
-    const id = uuid()
-    
-    const actionFn = (...args: any[]) => this.bindFn(state, {
-      type: `${ActionTypes.ActionHandler}-${key}`,
-      args,
-      id,
-    })
-
-    state.registerAction(id, action)
-    return actionFn
+  bindAction<S>(key: string, action: ActionCreator<S>, state: State<S>) {
+    return (...args: any[]) => {
+      this.triggerAction(state, {
+        type: ActionTypes.ActionHandler,
+        stateId: state.id,
+        key,
+        resolver: () => {
+          action(...args)
+        }
+      })
+    }
   }
 
   bindDraftFn(fn: DraftFn<any>, state: State<any>) {
-    const id = uuid()
-
-    const actionFn = () => this.bindFn(state, {
-      type: ActionTypes.Draft,
-      id,
-    })
-
-    state.registerDraftFn({ id, res: fn })
-    return actionFn
-  }
-
-  bindTrackerFn(fn: (podState: any, prevPodState: any) => any, state: State<any>, trackedState: State<any>) {
-    const id = uuid()
-
-    const actionFn = () => this.bindFn(state, {
-      type: ActionTypes.StateTracker,
-      id,
-    })
-
-    if (!this.stateTrackers.has(trackedState)) {
-      this.stateTrackers.set(trackedState, new Map())
-    }
-    this.stateTrackers.get(trackedState).set(id, state)
-
-    state.registerTracker(id, actionFn, () => fn(trackedState.current, trackedState.previous))
-    return actionFn
-  }
-
-  resolveTrackers(tracked: State<any>) {
-    if (this.stateTrackers.has(tracked)) {
-      const map = this.stateTrackers.get(tracked)
-
-      for (const [id, state] of map.entries()) {
-        state.triggerTracker(id)
-      }
+    return () => {
+      this.triggerAction(state, {
+        type: ActionTypes.Draft,
+        stateId: state.id,
+        resolver: () => {
+          fn(state.current)
+        }
+      })
     }
   }
 
-  bindFn(state: State<any>, action: any) {
+  bindTrackerFn<T, S>(fn: StateTrackerFn<T, S>, state: State<S>, trackedState: State<T>) {
+    trackedState.registerTrackerAction((curState, prevState) => {
+      this.triggerAction(state, {
+        type: ActionTypes.StateTracker,
+        stateId: state.id,
+        resolver: () => {
+          fn(curState, prevState)
+        }
+      })
+    })
+  }
+
+  triggerAction(state: State<any>, action: any) {
     this.store.dispatch(action)
-
-    if (!Object.is(state.current, state.previous)) {
-      state.triggerHooks()
-      this.resolveTrackers(state)
-    }
+    state.sideEffects()
   }
 }
