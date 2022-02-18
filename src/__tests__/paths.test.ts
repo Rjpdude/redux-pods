@@ -7,7 +7,7 @@ describe('State paths & state mapping', () => {
     const user = state({ username: 'ryan' })
     const game = state({ score: 0 })
 
-    const store = generateStore({
+    generateStore({
       user: user.reducer,
       game: game.reducer,
     })
@@ -61,5 +61,38 @@ describe('State paths & state mapping', () => {
 
     expect(user.map(store.getState())).toEqual({ username: 'ryan' })
     expect(game.map(store.getState())).toEqual({ score: 0 })
+  })
+
+  it('maps state for primitive values', () => {
+    const bigintVal = BigInt('1').valueOf()
+    const symbolVal = Symbol('str')
+
+    const num = state(10)
+    const str = state('hello')
+    const bool = state(true)
+    const bigint = state(bigintVal)
+    const symbol = state(symbolVal)
+
+    const store = generateStore({
+      deeply: combineReducers({
+        nested: combineReducers({
+          num: num.reducer,
+          str: str.reducer,
+          bool: bool.reducer,
+          bigint: bigint.reducer,
+          symbol: symbol.reducer,
+        })
+      })
+    })
+
+    const states = [
+      num.map(store.getState()),
+      str.map(store.getState()),
+      bool.map(store.getState()),
+      bigint.map(store.getState()),
+      symbol.map(store.getState())
+    ]
+
+    expect(states).toEqual([10, 'hello', true, bigintVal, symbolVal])
   })
 })

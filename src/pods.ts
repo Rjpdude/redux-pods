@@ -15,6 +15,10 @@ export class Pods {
     for (let state of this.states) {
       state.setPath(storeState)
     }
+
+    this.store.dispatch({
+      type: ActionTypes.ResolvePrimitives
+    })
   }
 
   registerState(state: State<any>) {
@@ -36,7 +40,7 @@ export class Pods {
     })
   }
 
-  resolve<T extends (...args: any[]) => any>(fn: T, state: State<any>, type: ActionTypes, ...args: (Parameters<T> | [() => Parameters<T>])) {
+  resolve<T extends (...args: any[]) => any>(fn: T, state: State<any>, type: ActionTypes, ...args: Parameters<T> | [() => Parameters<T>]) {
     this.triggerAction(state, {
       type,
       stateId: state.id,

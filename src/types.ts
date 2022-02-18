@@ -5,6 +5,7 @@ export enum ActionTypes {
   ActionHandler = 'pod-action-handler',
   Draft = 'pod-action-draft',
   StateTracker = 'pod-action-state-tracker',
+  ResolvePrimitives = 'pod-action-resolve-primitives',
 }
 
 export interface InternalActionType<S> {

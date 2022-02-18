@@ -2,7 +2,7 @@ import pods, { usePods } from '.'
 import { v4 as uuid } from 'uuid'
 import { createDraft, finishDraft, Draft } from 'immer'
 import { ActionTypes, ActionResolver, InternalActionType, DraftFn, StatefulActionSet, ActionSet, Exposed, StateTrackerFn, WatcherCallback } from './types'
-import { isPrimitive, findPath } from './util'
+import { isPrimitive, checkForPrimitive, unrwapPrimitive, findPath } from './util'
 import get from 'lodash.get'
 
 export class State<S> {
@@ -17,12 +17,26 @@ export class State<S> {
   private watchers: Set<WatcherCallback<S>>
 
   constructor(initialState: S) {
-    this.initialState = initialState
-    this.current = initialState
+    this.initialState = checkForPrimitive(initialState)
+    this.current = this.initialState
+    this.init()
+  }
+
+  init() {
+    if (this.initialState === null || this.initialState === undefined) {
+      console.warn('Pod states should not be initialized with null or undefined.')
+    }
     pods.registerState(this)
   }
 
   reducer = (state: S = this.initialState, action: InternalActionType<S>) => {
+    if (action.type === ActionTypes.ResolvePrimitives) {
+      const unwrapped = unrwapPrimitive(state)
+      this.initialState = unwrapped
+      this.current = unwrapped
+      return unwrapped
+    }
+
     let res = state
     try {
       if (action.stateId === this.id) {
@@ -103,6 +117,12 @@ export class State<S> {
     pods.createStateTracker(trackerFn, this, trackedState)
   }
 
+  resolve(draftFn: DraftFn<S>) {
+    pods.resolve(draftFn, this, ActionTypes.Draft, () => {
+      return isPrimitive(this.current) ? (this.current as any) : this.draft
+    })
+  }
+
   watch(callback: WatcherCallback<S>) {
     if (typeof callback !== 'function') {
       throw new Error(`Unable to register state watcher callback of type ${typeof callback}.`)
@@ -121,12 +141,6 @@ export class State<S> {
     return () => {
       this.watchers.delete(callback)
     }
-  }
-
-  resolve(draftFn: DraftFn<S>) {
-    pods.resolve(draftFn, this, ActionTypes.Draft, () => {
-      return isPrimitive(this.current) ? (this.current as any) : this.draft
-    })
   }
 
   use = (): S => {
