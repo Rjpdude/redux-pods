@@ -1,10 +1,7 @@
 import { State } from './exports'
 
 export function isPrimitive(val: any) {
-  return (
-    val === null ||
-    ['string', 'number', 'bigint', 'boolean', 'bigint', 'symbol', 'undefined'].includes(typeof val)
-  )
+  return ['string', 'number', 'boolean', 'bigint', 'symbol', 'undefined'].includes(typeof val)
 }
 
 export function wrap<T>(val: T): T {
