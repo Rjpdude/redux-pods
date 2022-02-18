@@ -172,7 +172,7 @@ userState.track(gameState, (state, prevState) => {
 
 The above tracker tracks changes to the `gameState`, and sets the user's highscore when the game state's `count` property is higher than the the previous count.
 
-To prevent infinite callback loops, trackers can only generate updates to their own state - the tracked state can only be overved, not updated.
+To prevent infinite callback loops, trackers can only generate updates to their own state - the tracked state can only be observed, not updated.
 
 # Hooks & Mapping
 
