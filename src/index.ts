@@ -1,6 +1,5 @@
 export {
   register,
   state,
-  usePods,
-  State
+  usePods
 } from './exports'
