@@ -8,7 +8,7 @@ describe('Primitive state types', () => {
 
     const store = generateStore({
       num: num.reducer,
-      str: str.reducer,
+      str: str.reducer
     })
 
     expect(store.getState().num).toBe(10)
@@ -55,7 +55,12 @@ describe('Primitive state types', () => {
     console.error = jest.fn()
 
     actions.deduct(5)
-    expect(console.error).toHaveBeenCalledWith('Error resolving pod state action handler.', new Error(`Primitive state values cannot be drafted - consider using 'current' instead.`))
+    expect(console.error).toHaveBeenCalledWith(
+      'Error resolving pod state action handler.',
+      new Error(
+        `Primitive state values cannot be drafted - consider using 'current' instead.`
+      )
+    )
     expect(store.getState().num).toBe(10)
 
     console.error = consoleErrorFn

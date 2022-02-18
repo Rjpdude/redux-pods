@@ -9,7 +9,7 @@ describe('State paths & state mapping', () => {
 
     generateStore({
       user: user.reducer,
-      game: game.reducer,
+      game: game.reducer
     })
 
     expect(user.getPath()).toBe('user')
@@ -22,7 +22,7 @@ describe('State paths & state mapping', () => {
 
     const store = generateStore({
       user: user.reducer,
-      game: game.reducer,
+      game: game.reducer
     })
 
     expect(user.map(store.getState())).toEqual({ username: 'ryan' })
@@ -37,7 +37,7 @@ describe('State paths & state mapping', () => {
       deeply: combineReducers({
         nested: combineReducers({
           user: user.reducer,
-          game: game.reducer,
+          game: game.reducer
         })
       })
     })
@@ -54,7 +54,7 @@ describe('State paths & state mapping', () => {
       deeply: combineReducers({
         nested: combineReducers({
           user: user.reducer,
-          game: game.reducer,
+          game: game.reducer
         })
       })
     })
@@ -80,7 +80,7 @@ describe('State paths & state mapping', () => {
           str: str.reducer,
           bool: bool.reducer,
           bigint: bigint.reducer,
-          symbol: symbol.reducer,
+          symbol: symbol.reducer
         })
       })
     })

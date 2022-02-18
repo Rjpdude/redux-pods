@@ -1,24 +1,34 @@
 export function isPrimitive(val: any) {
-  return val === null || ["string", "number", "bigint", "boolean", "undefined"].includes(typeof val)
+  return (
+    val === null ||
+    ['string', 'number', 'bigint', 'boolean', 'undefined'].includes(typeof val)
+  )
 }
 
 export function wrapPrimitive(val: any) {
   const type = typeof val
-  return type === 'string' ? new String(val) :
-    type === 'number' ? new Number(val) :
-    type === 'boolean' ? new Boolean(val) :
-    type === 'bigint' && BigInt(val)
+  return type === 'string'
+    ? new String(val)
+    : type === 'number'
+    ? new Number(val)
+    : type === 'boolean'
+    ? new Boolean(val)
+    : type === 'bigint' && BigInt(val)
 }
 
 export function unrwapPrimitive(val: any) {
-  return val instanceof String || val instanceof Number || val instanceof Boolean || val instanceof BigInt || val instanceof Symbol
+  return val instanceof String ||
+    val instanceof Number ||
+    val instanceof Boolean ||
+    val instanceof BigInt ||
+    val instanceof Symbol
     ? val.valueOf()
     : val
 }
 
 export function checkForPrimitive<T>(val: T): T {
   if (isPrimitive(val)) {
-    return wrapPrimitive(val) as unknown as T
+    return (wrapPrimitive(val) as unknown) as T
   }
   return val
 }

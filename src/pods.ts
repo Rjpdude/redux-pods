@@ -1,6 +1,5 @@
 import { Store } from 'redux'
-import { State } from './state'
-import { ActionTypes, ActionCreator, StateTrackerFn } from './types'
+import { State, ActionTypes, ActionCreator, StateTrackerFn } from '.'
 
 export class Pods {
   private store: Store
@@ -34,13 +33,22 @@ export class Pods {
     }
   }
 
-  createStateTracker<T, S>(fn: StateTrackerFn<T, S>, state: State<S>, trackedState: State<T>) {
+  createStateTracker<T, S>(
+    fn: StateTrackerFn<T, S>,
+    state: State<S>,
+    trackedState: State<T>
+  ) {
     trackedState.watch((...states) => {
       this.resolve(fn, state, ActionTypes.StateTracker, ...states)
     })
   }
 
-  resolve<T extends (...args: any[]) => any>(fn: T, state: State<any>, type: ActionTypes, ...args: Parameters<T> | [() => Parameters<T>]) {
+  resolve<T extends (...args: any[]) => any>(
+    fn: T,
+    state: State<any>,
+    type: ActionTypes,
+    ...args: Parameters<T> | [() => Parameters<T>]
+  ) {
     this.triggerAction(state, {
       type,
       stateId: state.id,

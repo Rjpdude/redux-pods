@@ -39,7 +39,7 @@ describe('State action handlers', () => {
 
     const actions = game.actions({
       setScore,
-      reset,
+      reset
     })
 
     const store = generateStore({ game: game.reducer })

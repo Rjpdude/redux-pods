@@ -1,8 +1,25 @@
-import pods, { usePods } from '.'
+import pods, {
+  usePods,
+  ActionTypes,
+  ActionResolver,
+  InternalActionType,
+  DraftFn,
+  StatefulActionSet,
+  ActionSet,
+  Exposed,
+  StateTrackerFn,
+  WatcherCallback
+} from '.'
+
+import {
+  isPrimitive,
+  checkForPrimitive,
+  unrwapPrimitive,
+  findPath
+} from './util'
+
 import { v4 as uuid } from 'uuid'
 import { createDraft, finishDraft, Draft } from 'immer'
-import { ActionTypes, ActionResolver, InternalActionType, DraftFn, StatefulActionSet, ActionSet, Exposed, StateTrackerFn, WatcherCallback } from './types'
-import { isPrimitive, checkForPrimitive, unrwapPrimitive, findPath } from './util'
 import get from 'lodash.get'
 
 export class State<S> {
@@ -24,7 +41,9 @@ export class State<S> {
 
   init() {
     if (this.initialState === null || this.initialState === undefined) {
-      console.warn('Pod states should not be initialized with null or undefined.')
+      console.warn(
+        'Pod states should not be initialized with null or undefined.'
+      )
     }
     pods.registerState(this)
   }
@@ -95,19 +114,26 @@ export class State<S> {
 
   get draft() {
     if (this.locked) {
-      throw new Error('State drafts can only be accessed within action creator or resolver functions.')
+      throw new Error(
+        'State drafts can only be accessed within action creator or resolver functions.'
+      )
     }
     if (isPrimitive(this.current)) {
-      throw new Error(`Primitive state values cannot be drafted - consider using 'current' instead.`)
+      throw new Error(
+        `Primitive state values cannot be drafted - consider using 'current' instead.`
+      )
     }
     return this._draft || (this._draft = createDraft(this.current))
   }
 
   actions<O extends StatefulActionSet<S>>(obj: O): ActionSet<O> {
-    return Object.entries(obj).reduce((actionSet, [key,fn]) => ({
-      ...actionSet,
-      [key]: pods.createActionHandler(fn, this),
-    }), {}) as ActionSet<O>
+    return Object.entries(obj).reduce(
+      (actionSet, [key, fn]) => ({
+        ...actionSet,
+        [key]: pods.createActionHandler(fn, this)
+      }),
+      {}
+    ) as ActionSet<O>
   }
 
   track<P>(trackedState: Exposed<State<P>>, trackerFn: StateTrackerFn<P, S>) {
@@ -125,7 +151,9 @@ export class State<S> {
 
   watch(callback: WatcherCallback<S>) {
     if (typeof callback !== 'function') {
-      throw new Error(`Unable to register state watcher callback of type ${typeof callback}.`)
+      throw new Error(
+        `Unable to register state watcher callback of type ${typeof callback}.`
+      )
     }
 
     if (!this.watchers) {
@@ -133,7 +161,9 @@ export class State<S> {
     }
 
     if (this.watchers.has(callback)) {
-      throw new Error('Unable to register state watcher callback - already registered.')
+      throw new Error(
+        'Unable to register state watcher callback - already registered.'
+      )
     }
 
     this.watchers.add(callback)
@@ -143,7 +173,7 @@ export class State<S> {
     }
   }
 
-  use = (): S => {
+  use = (): Readonly<S> => {
     return usePods(this)
   }
 
@@ -155,7 +185,10 @@ export class State<S> {
     try {
       this.path = findPath(storeState, this.initialState)
     } catch (error) {
-      console.error('Unable to located state path within redux store tree.', this.initialState)
+      console.error(
+        'Unable to located state path within redux store tree.',
+        this.initialState
+      )
     }
   }
 

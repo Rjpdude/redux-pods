@@ -16,9 +16,7 @@ describe('usePods and State use react hook', () => {
     const Component = () => {
       const userState = player.use()
 
-      return (
-        <div>{userState.username}</div>
-      )
+      return <div>{userState.username}</div>
     }
 
     const output = mount(
@@ -46,9 +44,7 @@ describe('usePods and State use react hook', () => {
     const Component = () => {
       const userState = player.use()
 
-      return (
-        <div>{userState.username}</div>
-      )
+      return <div>{userState.username}</div>
     }
 
     const output = mount(
@@ -92,7 +88,7 @@ describe('usePods and State use react hook', () => {
       </Provider>
     )
 
-    expect(output.find("#username").text()).toBe('ryan')
-    expect(output.find("#score").text()).toBe('10')
+    expect(output.find('#username').text()).toBe('ryan')
+    expect(output.find('#score').text()).toBe('10')
   })
 })
