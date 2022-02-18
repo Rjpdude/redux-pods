@@ -1,5 +1,5 @@
 import { Store } from 'redux'
-import { podsInstance, State, Exposed, InferStates, NewState } from './exports'
+import { podsInstance, State, Exposed, InferStates } from './exports'
 import { reactError } from './util'
 
 export function register(store: Store) {
@@ -17,8 +17,8 @@ export function state<S>(initialState: S) {
 
   Object.setPrototypeOf(boundReducer, stateObj)
   Object.defineProperty(boundReducer, 'draft', {
-    get() { 
-      return stateObj.draft 
+    get() {
+      return stateObj.draft
     }
   })
 

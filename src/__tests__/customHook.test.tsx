@@ -18,22 +18,22 @@ describe('Custom hook functions', () => {
     function useData() {
       const [username, setUsername] = React.useState(player.current.username)
       const [score, setScore] = React.useState(game.current.score)
-    
+
       React.useEffect(() => {
         const unregisterUser = player.watch(({ username }) => {
           setUsername(username)
         })
-    
+
         const unregisterGame = game.watch(({ score }) => {
           setScore(score)
         })
-    
+
         return () => {
           unregisterUser()
           unregisterGame()
         }
       }, [])
-    
+
       return { username, score }
     }
 
@@ -54,8 +54,8 @@ describe('Custom hook functions', () => {
       </Provider>
     )
 
-    expect(output.find("#username").text()).toBe('ryan')
-    expect(output.find("#score").text()).toBe('10')
+    expect(output.find('#username').text()).toBe('ryan')
+    expect(output.find('#score').text()).toBe('10')
 
     act(() => {
       player.resolve((draft) => {
@@ -66,8 +66,8 @@ describe('Custom hook functions', () => {
       })
     })
 
-    expect(output.find("#username").text()).toBe('john')
-    expect(output.find("#score").text()).toBe('50')
+    expect(output.find('#username').text()).toBe('john')
+    expect(output.find('#score').text()).toBe('50')
   })
 
   it('provides state from custom hook using usePods', () => {
@@ -102,8 +102,8 @@ describe('Custom hook functions', () => {
       </Provider>
     )
 
-    expect(output.find("#username").text()).toBe('ryan')
-    expect(output.find("#score").text()).toBe('10')
+    expect(output.find('#username').text()).toBe('ryan')
+    expect(output.find('#score').text()).toBe('10')
 
     act(() => {
       player.resolve((draft) => {
@@ -114,8 +114,8 @@ describe('Custom hook functions', () => {
       })
     })
 
-    expect(output.find("#username").text()).toBe('john')
-    expect(output.find("#score").text()).toBe('50')
+    expect(output.find('#username').text()).toBe('john')
+    expect(output.find('#score').text()).toBe('50')
   })
 
   it('unregisters watcher fn when component unmounts', () => {
@@ -129,23 +129,21 @@ describe('Custom hook functions', () => {
 
     function useData() {
       const [username, setUsername] = React.useState(player.current.username)
-    
+
       React.useEffect(() => {
         return player.watch(({ username }) => {
           fn(username)
           setUsername(username)
         })
       }, [])
-    
+
       return username
     }
 
     const Component = () => {
       const username = useData()
 
-      return (
-        <div id="username">{username}</div>
-      )
+      return <div id="username">{username}</div>
     }
 
     const output = mount(

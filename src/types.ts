@@ -36,28 +36,25 @@ export type ActionSet<O extends StatefulActionSet<any>> = {
   [K in keyof O]: (...args: Parameters<O[K]>) => void
 }
 
-export type NewState<S> = Exposed<State<S>> & {
-  (state: S, action: InternalActionType<S>): S
-}
-
 export type ExtractStateType<S> = S extends State<infer T> ? T : unknown
 
-export type Exposed<S extends State<any>> = Reducer<ExtractStateType<S>> & Omit<
-  S,
-  | 'setPath'
-  | 'registerAction'
-  | 'registerDraftFn'
-  | 'registerTracker'
-  | 'registerHook'
-  | 'unregisterHook'
-  | 'triggerTracker'
-  | 'triggerHooks'
-  | 'previous'
-  | 'sideEffects'
-  | 'reducer'
-  | 'actionsLocked'
-  | 'registerWatchFn'
->
+export type Exposed<S extends State<any>> = Reducer<ExtractStateType<S>> &
+  Omit<
+    S,
+    | 'setPath'
+    | 'registerAction'
+    | 'registerDraftFn'
+    | 'registerTracker'
+    | 'registerHook'
+    | 'unregisterHook'
+    | 'triggerTracker'
+    | 'triggerHooks'
+    | 'previous'
+    | 'sideEffects'
+    | 'reducer'
+    | 'actionsLocked'
+    | 'registerWatchFn'
+  >
 
 export type InferStates<A> = {
   [K in keyof A]: A[K] extends Exposed<State<infer T>> ? Readonly<T> : unknown

@@ -29,7 +29,9 @@ export class Pods {
   createActionHandler<S>(action: ActionCreator<S>, state: State<S>) {
     return (...args: any[]) => {
       if (state.actionsLocked) {
-        throw new Error('To prevent race conditions, state actions cannot be called within watcher functions.')
+        throw new Error(
+          'To prevent race conditions, state actions cannot be called within watcher functions.'
+        )
       }
       this.resolve(action, state, ActionTypes.ActionHandler, ...args)
     }
