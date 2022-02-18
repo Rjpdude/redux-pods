@@ -227,7 +227,7 @@ To prevent infinite callback loops, `watch` can only be used to **observe** stat
 You can also create your own custom hooks using `watch`. When creating a custom hook, you should always unregister the watcher when the component unmounts using the unregister function returned by `watch`. The state's `current` property can be used to initialize your component's internal state.
 
 ```tsx
-function UsernameAndScore() {
+function useData() {
   const [username, setUsername] = useState(user.current.username)
   const [score, setScore] = useState(game.current.score)
 
@@ -244,7 +244,7 @@ function UsernameAndScore() {
       unregisterUser()
       unregisterGame()
     }
-  })
+  }, [])
 
   return [username, score]
 }

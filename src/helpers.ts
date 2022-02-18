@@ -55,7 +55,7 @@ export function podStateHook<S>(state: State<S>): S {
     return state.watch((curState) => {
       setPodState(curState)
     })
-  })
+  }, [])
 
   return podState
 }

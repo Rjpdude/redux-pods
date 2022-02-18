@@ -80,7 +80,7 @@ export class State<S> {
     podsInstance.registerState(this)
   }
 
-  reducer(state: S = this.initialState, action: InternalActionType<S>){
+  reducer(state: S = this.initialState, action: InternalActionType<S>) {
     if (action.type === ActionTypes.ResolvePrimitives) {
       return this.resolveWrappedState(state)
     }
