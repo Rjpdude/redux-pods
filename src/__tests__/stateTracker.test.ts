@@ -1,7 +1,23 @@
 import { state } from '..'
-import { generateStore } from '../test-utils'
+import { generateStore, asyncFn } from '../test-utils'
 
 describe('State tracker functions', () => {
+  it('throws error when attempting to track non-state object', () => {
+    const user = state({ username: '' })
+
+    expect(() => {
+      user.track({} as any, (_a, _b) => {})
+    }).toThrowError('Trackers must reference a different state object.')
+  })
+
+  it('throws error when attempting to track own state', () => {
+    const user = state({ username: '' })
+
+    expect(() => {
+      user.track(user, (_a, _b) => {})
+    }).toThrowError('Trackers must reference a different state object.')
+  })
+
   it('tracks state from action handler update', () => {
     const user = state({
       username: '',
@@ -84,5 +100,31 @@ describe('State tracker functions', () => {
       { username: 'tyler', currentScore: 35 },
       { username: 'ryan', currentScore: 500 }
     )
+  })
+
+  it('tracks state from async action resolver update', async () => {
+    const user = state({ currentScore: -1 })
+    const game = state({ score: -1 })
+
+    const fn = jest.fn((cur, _prev) => {
+      game.draft.score = cur.currentScore
+    })
+    game.track(user, fn)
+
+    const updateUser = async () => {
+      const res = await asyncFn(100)
+
+      user.resolve((draft) => {
+        draft.currentScore = res
+      })
+    }
+
+    const store = generateStore({ user: user.reducer, game: game.reducer })
+
+    await updateUser()
+
+    expect(store.getState().user.currentScore).toBe(100)
+    expect(store.getState().game.score).toBe(100)
+    expect(fn).toHaveBeenCalledWith({ currentScore: 100 }, { currentScore: -1 })
   })
 })

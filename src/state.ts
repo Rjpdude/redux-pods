@@ -213,7 +213,7 @@ export class State<S> {
     }
   }
 
-  use = (): Readonly<S> => {
+  use(): Readonly<S> {
     return usePods(this)
   }
 

@@ -7,6 +7,10 @@ describe('State paths & state mapping', () => {
     expect(() => {
       state(null)
     }).toThrowError('Pod states should cannot be initialized with null or undefined.')
+
+    expect(() => {
+      state(undefined)
+    }).toThrowError('Pod states should cannot be initialized with null or undefined.')
   })
 
   it('detects paths', () => {
