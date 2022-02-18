@@ -75,7 +75,6 @@ The store's initial state will look like:
 State changes can be effected within action callbacks through the state's `draft` property - a mutable copy of the state object produced by [Immer](https://immerjs.github.io/immer/). After the action callback is fully resolved, the draft is finalized and returned as the new state object.
 
 You can also access the state's `current` property - the actual current state object. This is usefull for maintining an awareness of the current state to compare against pending changes on the draft.
-___
 
 ## Action handlers
 
