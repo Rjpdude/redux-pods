@@ -1,10 +1,11 @@
 {
   "transform": {
-    "^.+\\.(t|j)sx?$": "ts-jest"
+    "^.+\\.tsx?$": "ts-jest"
   },
   "setupFiles": [
     "./jestSetup.js"
   ],
+  "testPathIgnorePatterns": ["<rootDir>/node_modules/", "<rootDir>/lib/"],
   "testRegex": "((\\.|/)(test|spec))\\.(jsx?|tsx?)$",
   "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"]
 }

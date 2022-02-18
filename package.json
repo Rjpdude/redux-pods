@@ -27,7 +27,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.tsx\"",
     "lint": "tslint -p tsconfig.json",
     "prepublishOnly": "npm run test && npm run lint",
-    "prepare": "tsc"
+    "prepare": "tsc -p tsconfig-build.json"
   },
   "dependencies": {
     "immer": ">4.0.0",

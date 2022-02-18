@@ -10,9 +10,9 @@ export enum ActionTypes {
 
 export interface InternalActionType<S> {
   type: ActionTypes
-  stateId: string
+  stateId?: string
   actionKey?: string
-  resolver: ActionResolver<S>
+  resolver?: ActionResolver<S>
 }
 
 export type ActionResolver<S> = () => S | void
