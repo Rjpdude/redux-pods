@@ -81,9 +81,7 @@ There are multiple avenues available for accessing a pod state.
 
 ## React Hooks
 
-One of the primary features of pods are their ability to supply their state through React hooks. A pod state can be hooked
-into a React component in one of two ways - individually through a state's `use` method (as domonstrated above), or with
-multiple pod states:
+One of the primary features of pods are their ability to supply their state through React hooks. A pod state can be hooked into a React component in one of two ways - individually through a state's `use` method (as domonstrated above), or with multiple pod states:
 
 ```tsx
 import { usePods } from 'redux-pods'
@@ -112,14 +110,46 @@ function mapStateToProps(storeState) {
 
 # Actions
 
-Pod states can be updated in a multitude of ways - action handlers, async functions and trackers. The state's `draft` property -
-a mutable copy of the actual state object - is made available within action handlers. Drafts can be mutated in any way without
-effecting the actual state object itself.
+Pod states can be updated in a multitude of ways - action handlers, async functions and trackers. The state's `draft` property - a mutable copy of the actual state object - is made available within action handlers.
 
-**Note** state `draft` properties can only be accessed and updated within action handlers. Attemps to access the `draft` property
-outside action handlers will result in an error.
+Drafts can be mutated directly without effecting the actual state object itself. Drafts should not be leaked or accessed outside of stateful action handlers.
 
-## Async Actions
+## Action handlers
+
+A set of action handlers can be created through a state's `actions` method. The action handlers can then be imported and called from anywhere in your application.
+
+```ts
+const account = state({
+  balance: 0,
+  transactions: []
+})
+
+const accountActions = account.actions({
+  setBalance: (balance: number) => {
+    account.draft.balance = balance
+  },
+
+  addTransaction: (transaction: Transaction) => {
+    account.draft.transactions.push(transaction)
+  }
+})
+```
+
+Action handlers also have access to their state's `current` property, allowing access the actual state value. This can be useful for updating the draft while maintaining an awareness of the actual state.
+
+```ts
+const accountActions = account.actions({
+  setBalance: (balance: number) => {
+    account.draft.balance = balance
+
+    if (account.current.balance !== account.draft.balance) {
+      ...
+    }
+  }
+})
+```
+
+## Resolve
 
 Async actions can make changes to a state by using the state's `resolve` callback function.
 
@@ -137,7 +167,7 @@ const loadUser = async (key: string) => {
 }
 ```
 
-A state's `resolve` method can be called from anywhere, not just within async function. For example, it can also be called within
+State resolvers can be called from anywhere, not just within async function. For example, it can also be called within
 a component's internal callback function:
 
 ```tsx
@@ -156,7 +186,7 @@ function Component() {
 }
 ```
 
-The above component will increase the game state's `score` property by 50 everytime the button is clicked.
+While this sort of approach is generally discouraged in favor of normal action handlers, this pattern can be used for unique corner cases as needed.
 
 ## Trackers
 
@@ -167,21 +197,20 @@ const userState = state({
   highscore: 0
 })
 
-userState.track(gameState, (gameState, prevGameState) => {
-  if (gameState.score > prevGameState.score) {
-    userState.draft.highscore = gameState.score
+userState.track(gameState, (state, prevState) => {
+  if (state.score > prevState.score) {
+    userState.draft.highscore = state.score
   }
 })
 ```
 
-The above tracker tracks changes to the `gameState`, and sets the user's highscore when the game state's
-`count` property is higher than the the previous count.
+The above tracker tracks changes to the `gameState`, and sets the user's highscore when the game state's `count` property is higher than the the previous count.
 
-Note that trackers can only update their own state - the tracked state can only be read, not updated.
+To prevent infinite callback loops, trackers can only generate updates to their own state - the tracked state can only be overved, not updated.
 
-## Watch
+# Watch
 
-Similar to hooks, pod states can be observed from anywhere in your application through the state's `watch` method. This can be helpful for generating side effects when a state is updated, for example, calling an API with an updated state value.
+Similar to hooks, pod states can be observed from anywhere in your application through the state's `watch` method.
 
 ```ts
 const game = state({
@@ -195,6 +224,8 @@ game.watch((state, prevState) => {
 })
 ```
 
+This can be helpful for generating side effects when a state is updated, for example, calling an API with an updated state property.
+
 In a tradition react/redux application, these types of side effects are generally placed within a UI component, often resulting in inconsistent and unreliable outcomes. Extracting side effects into watcher functions can reduce strain on your application's UI layer, and more reliably react to a change in your state.
 
-To prevent an infinite callback loop, `watch` can only be used to **observe** state changes. Accessing the state's `draft` or calling a state's action handler within a watch function will result in an error.
+To prevent infinite callback loops, `watch` can only be used to **observe** state changes. Accessing the state's `draft` or calling a state's action handler within a watch function will result in an error.
