@@ -45,6 +45,39 @@ describe('State tests', () => {
     console.error = consoleErrorFn
   })
 
+  it('throws error when attempting to call action handlers within watcher function', () => {
+    const game = state({ count: 0 })
+
+    const gameActions = game.actions({
+      setCount: (to: number) => {
+        game.draft.count = to
+      }
+    })
+
+    const store = generateStore({
+      game
+    })
+
+    game.watch(() => {
+      gameActions.setCount(2000)
+    })
+
+    const consoleErrorFn = console.error
+    console.error = jest.fn()
+
+    gameActions.setCount(100)
+
+    expect(console.error).toHaveBeenCalledWith(
+      'Error resolving watcher callback function.',
+      new Error(
+        'To prevent race conditions, state actions cannot be called within watcher functions.'
+      )
+    )
+    expect(store.getState().game.count).toBe(100)
+
+    console.error = consoleErrorFn
+  })
+
   it('notifies watcher functions', () => {
     const game = state({ count: 0 })
 
@@ -103,6 +136,35 @@ describe('State tests', () => {
 
     gameActions.setCount(20)
     expect(store.getState().game.count).toBe(20)
+    expect(watcherFn).toHaveBeenCalledTimes(1)
+  })
+
+  it('doesnt notify watcher functions when state hasnt changed', () => {
+    const game = state({ count: 0 })
+
+    const gameActions = game.actions({
+      setCount: (to: number) => {
+        if (to < 100) {
+          game.draft.count = to
+        }
+      }
+    })
+
+    const store = generateStore({
+      game: game
+    })
+
+    const watcherFn = jest.fn()
+
+    game.watch(watcherFn)
+
+    gameActions.setCount(10)
+    expect(store.getState().game.count).toBe(10)
+
+    expect(watcherFn).toHaveBeenCalledWith({ count: 10 }, { count: 0 })
+
+    gameActions.setCount(200)
+    expect(store.getState().game.count).toBe(10)
     expect(watcherFn).toHaveBeenCalledTimes(1)
   })
 })

@@ -141,13 +141,13 @@ A state's `resolve` method can be called from anywhere, not just within async fu
 a component's internal callback function:
 
 ```tsx
-import { gameState, gameActions } from '.'
+import { gameState } from '.'
 
 function Component() {
   const { score } = gameState.use()
 
   const onClick = () => {
-    gameActions.resolve((draft) => {
+    gameState.resolve((draft) => {
       draft.score += 50
     })
   }
@@ -178,3 +178,23 @@ The above tracker tracks changes to the `gameState`, and sets the user's highsco
 `count` property is higher than the the previous count.
 
 Note that trackers can only update their own state - the tracked state can only be read, not updated.
+
+## Watch
+
+Similar to hooks, pod states can be observed from anywhere in your application through the state's `watch` method. This can be helpful for generating side effects when a state is updated, for example, calling an API with an updated state value.
+
+```ts
+const game = state({
+  score: 0
+})
+
+game.watch((state, prevState) => {
+  if (state.score !== prevState.score) {
+    syncGameScore(state.score)
+  }
+})
+```
+
+In a tradition react/redux application, these types of side effects are generally placed within a UI component, often resulting in inconsistent and unreliable outcomes. Extracting side effects into watcher functions can reduce strain on your application's UI layer, and more reliably react to a change in your state.
+
+To prevent an infinite callback loop, `watch` can only be used to **observe** state changes. Accessing the state's `draft` or calling a state's action handler within a watch function will result in an error.

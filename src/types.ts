@@ -55,7 +55,8 @@ export type Exposed<S extends State<any>> = Reducer<ExtractStateType<S>> & Omit<
   | 'previous'
   | 'sideEffects'
   | 'reducer'
-  | 'apply'
+  | 'actionsLocked'
+  | 'registerWatchFn'
 >
 
 export type InferStates<A> = {

@@ -30,12 +30,6 @@ export class State<S> {
   private path: string
 
   /**
-   * The state's lock status. When true, it prevents a state draft from being created.
-   * This should only ever be false when resolving an action within the reducer.
-   */
-  private locked = true
-
-  /**
    * The initial state value.
    */
   private initialState: Readonly<S>
@@ -44,6 +38,18 @@ export class State<S> {
    * The drafted state value, set when a state resolver function accesses the `draft` member.
    */
   private _draft: Draft<S> | undefined
+
+  /**
+   * The state's lock status. When true, it prevents a state draft from being created.
+   * This should only ever be false when resolving an action within the reducer.
+   */
+  private draftLocked = true
+
+  /**
+   * Used to block access to action handlers when resolving state watcher functions. This
+   * prevents race conditions.
+   */
+  public actionsLocked = false
 
   /**
    * The state's current value within the redux store.
@@ -114,12 +120,12 @@ export class State<S> {
   }
 
   private unlock(state: Readonly<S>) {
-    this.locked = false
+    this.draftLocked = false
     this.previous = state
   }
 
   private lock(state: Readonly<S>) {
-    this.locked = true
+    this.draftLocked = true
     this.current = state
     this._draft = undefined
   }
@@ -143,7 +149,7 @@ export class State<S> {
   }
 
   get draft() {
-    if (this.locked) {
+    if (this.draftLocked) {
       throw new Error(
         'State drafts can only be accessed within action creator or resolver functions.'
       )
@@ -186,6 +192,18 @@ export class State<S> {
   }
 
   watch(callback: WatcherCallback<S>) {
+    return this.registerWatchFn((...args) => {
+      this.actionsLocked = true
+
+      try {
+        callback(...args)
+      } finally {
+        this.actionsLocked = false
+      }
+    })
+  }
+
+  registerWatchFn(callback: WatcherCallback<S>) {
     if (typeof callback !== 'function') {
       throw new Error(
         `Unable to register state watcher callback of type ${typeof callback}.`
