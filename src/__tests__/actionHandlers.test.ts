@@ -1,4 +1,4 @@
-import { state } from '..'
+import { state } from '../exports'
 import { generateStore } from '../test-utils'
 
 describe('State action handlers', () => {
@@ -16,7 +16,7 @@ describe('State action handlers', () => {
       }
     })
 
-    const store = generateStore({ game: game.reducer })
+    const store = generateStore({ game })
 
     actions.setScore(10)
     expect(store.getState().game.score).toBe(10)
@@ -42,7 +42,7 @@ describe('State action handlers', () => {
       reset
     })
 
-    const store = generateStore({ game: game.reducer })
+    const store = generateStore({ game })
 
     actions.setScore(10)
     expect(store.getState().game.score).toBe(10)

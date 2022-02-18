@@ -25,7 +25,7 @@ describe('Reducer time tests', () => {
     }
 
     const store = generateStore({
-      user: user.reducer,
+      user,
       test: simpleReducer
     })
 

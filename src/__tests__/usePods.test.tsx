@@ -10,7 +10,7 @@ describe('usePods and State use react hook', () => {
     const player = state({ username: 'ryan' })
 
     const store = generateStore({
-      player: player.reducer
+      player
     })
 
     const Component = () => {
@@ -38,7 +38,7 @@ describe('usePods and State use react hook', () => {
     })
 
     const store = generateStore({
-      player: player.reducer
+      player
     })
 
     const Component = () => {
@@ -67,8 +67,8 @@ describe('usePods and State use react hook', () => {
     const game = state({ score: 10 })
 
     const store = generateStore({
-      player: player.reducer,
-      game: game.reducer
+      player,
+      game
     })
 
     const Component = () => {

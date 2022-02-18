@@ -1,8 +1,8 @@
-import { createStore, combineReducers, Reducer } from 'redux'
+import { createStore, combineReducers, Reducer, ReducersMapObject } from 'redux'
 import { podsInstance } from '../exports'
 
-export function generateStore<R extends { [key: string]: Reducer }>(
-  reducers: R
+export function generateStore(
+  reducers: ReducersMapObject
 ) {
   const store = createStore(combineReducers(reducers))
   podsInstance.register(store)

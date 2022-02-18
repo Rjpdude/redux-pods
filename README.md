@@ -20,16 +20,11 @@ const gameActions = gameState.actions({
 
   subtract: (points: number) => {
     game.draft.score -= points
-  },
-
-  clear: () => {
-    game.draft.score = 0
   }
 })
 ```
 
-After `gameState` has been included as a reducer, it's state and actions can be used within a React
-UI component without the need for `mapStateToProps` or `mapDispatchToProps`:
+After `gameState` has been [included as a reducer](#including-state-reducers), it's state and actions can be accessed and called directly within your react UI component:
 
 ```tsx
 function Component() {
@@ -39,6 +34,45 @@ function Component() {
     <button onClick={() => gameActions.add(1)}>{score}</button>
   )
 }
+```
+
+# Setup
+
+To use pods in your application, simply register your redux store through the supplied `register` function.
+
+```ts
+import { createStore, combineReducers } from 'redux'
+import { register } from 'redux-pods'
+
+const store = createStore(combineReducers({
+  ... 
+}))
+
+register(store)
+```
+
+# Including state reducers
+
+Pod state's are themselves reducer functions, and can be included in your reducer map in exactly the same way as
+traditional reducers.
+
+```ts
+import { combineReducers } from 'redux'
+import { state } from 'redux-pods'
+
+const user = state({
+  email: '',
+  phoneNumber: ''
+})
+
+const game = state({
+  score: 0
+})
+
+const reducers = combineReducers({
+  user,
+  game
+})
 ```
 
 # State Hooks & Mapping

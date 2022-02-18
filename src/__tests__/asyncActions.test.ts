@@ -15,7 +15,7 @@ describe('State async action handlers', () => {
       })
     }
 
-    const store = generateStore({ game: game.reducer })
+    const store = generateStore({ game })
 
     expect(store.getState().game.score).toBe(0)
 

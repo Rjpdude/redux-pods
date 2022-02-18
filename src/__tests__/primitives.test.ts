@@ -7,8 +7,8 @@ describe('Primitive state types', () => {
     const str = state('hello')
 
     const store = generateStore({
-      num: num.reducer,
-      str: str.reducer
+      num,
+      str
     })
 
     expect(store.getState().num).toBe(10)
@@ -28,7 +28,7 @@ describe('Primitive state types', () => {
     })
 
     const store = generateStore({
-      num: num.reducer
+      num: num
     })
 
     actions.set(50)
@@ -48,7 +48,7 @@ describe('Primitive state types', () => {
     })
 
     const store = generateStore({
-      num: num.reducer
+      num
     })
 
     const consoleErrorFn = console.error

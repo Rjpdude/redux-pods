@@ -41,7 +41,7 @@ describe('State tracker functions', () => {
 
     game.track(user, fn)
 
-    const store = generateStore({ user: user.reducer, game: game.reducer })
+    const store = generateStore({ user, game })
 
     expect(store.getState().user.currentScore).toBe(-1)
     expect(store.getState().game.score).toBe(-1)
@@ -81,7 +81,7 @@ describe('State tracker functions', () => {
 
     game.track(user, fn)
 
-    const store = generateStore({ user: user.reducer, game: game.reducer })
+    const store = generateStore({ user, game })
 
     userActions.loadUser('ryan', 500)
     expect(store.getState().game.score).toBe(500)
@@ -119,7 +119,7 @@ describe('State tracker functions', () => {
       })
     }
 
-    const store = generateStore({ user: user.reducer, game: game.reducer })
+    const store = generateStore({ user, game })
 
     await updateUser()
 

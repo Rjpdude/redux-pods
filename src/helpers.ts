@@ -1,13 +1,28 @@
 import { Store } from 'redux'
-import { podsInstance, State, Exposed, InferStates } from './exports'
+import { podsInstance, State, Exposed, InferStates, NewState } from './exports'
 import { reactError } from './util'
 
 export function register(store: Store) {
   podsInstance.register(store)
 }
 
-export function state<S>(initialState: S): Exposed<State<S>> {
-  return new State(initialState)
+export function state<S>(initialState: S) {
+  const stateObj = new State(initialState)
+
+  function reducer(this: State<S>, state: S, action: any) {
+    return this.reducer(state, action)
+  }
+
+  const boundReducer = reducer.bind(stateObj) as Exposed<State<S>>
+
+  Object.setPrototypeOf(boundReducer, stateObj)
+  Object.defineProperty(boundReducer, 'draft', {
+    get() { 
+      return stateObj.draft 
+    }
+  })
+
+  return boundReducer
 }
 
 export function usePods<A extends any[]>(

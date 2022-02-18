@@ -22,7 +22,7 @@ describe('State tests', () => {
     })
 
     const store = generateStore({
-      game: game.reducer
+      game
     })
 
     game.watch(() => {
@@ -55,7 +55,7 @@ describe('State tests', () => {
     })
 
     const store = generateStore({
-      game: game.reducer
+      game: game
     })
 
     const watcherFn1 = jest.fn()
@@ -89,7 +89,7 @@ describe('State tests', () => {
     })
 
     const store = generateStore({
-      game: game.reducer
+      game
     })
 
     const watcherFn = jest.fn()
