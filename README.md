@@ -79,17 +79,17 @@ const reducers = combineReducers({
 
 There are multiple ways to effect a state. States expose a `draft` property - a mutable copy of the actual state object - giving action handler functions the ability to effect changes to a state.
 
-Drafts can be mutated directly without effecting the actual state object itself. Drafts should not be leaked or accessed outside of stateful action handlers.
-
 ## Action handlers
 
-Action handlers can be created trough either `action` or `actionSet`, to create single action handlers or a set of multiple. They can then be imported and called from anywhere in your application.
+Action handlers can be created trough either `action` or `actionSet`, to create single action handlers or a set of multiple. After the state has been [included as a reducer](#including-state-reducers), actions can be imported and called from wherever necessary.
 
 ```ts
 const account = state({
   balance: 0,
   transactions: []
 })
+
+// a set of multiple action handlers
 
 const accountActions = account.actionSet({
   setBalance: (balance: number) => {
@@ -101,8 +101,12 @@ const accountActions = account.actionSet({
   }
 })
 
-// accountActions.setBalance(5.95)
-// accountActions.addTransactions({ ... })
+// or an individual action handler
+
+const resetAccount = account.action((balance: number) => {
+  account.draft.balance = balance
+  account.draft.transactions = []
+})
 ```
 
 States also expose a `current` property, allowing access the actual state value. This can be useful for updating the draft while maintaining an awareness of the actual state.
@@ -115,8 +119,6 @@ const setBalance = account.action((to: number) => {
     ...
   }
 })
-
-// setBalance(5.95)
 ```
 
 ## Resolve
@@ -252,3 +254,16 @@ function useData() {
   return { username, score }
 }
 ```
+
+# Considerations
+
+The purpose of redux-pods is to modularize redux state objects and combine them with various types of action handlers, hopefully leading to a greater separation of concerns between the data & UI layers of your application. There are, however, a few things to take into consideration.
+
+## States
+
+You should also take care to never directly mutate a state's `current` property, or leak/mutate `draft` outside of an action handler. While it is generally safe to access `current` to read a state value, it would be safer to use other methods such as [hooks](#hooks-&-mapping) or [watch](#watch).
+
+## Actions
+
+Action handlers share many of the same best-practice standards as traditional reducer functions. They should be simple in nature - resource intensive computations should be minimised as much as possible.
+
