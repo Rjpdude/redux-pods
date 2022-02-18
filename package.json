@@ -25,6 +25,7 @@
   "scripts": {
     "test": "jest --config ./jestconfig.json",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.tsx\"",
+    "lint": "eslint src",
     "lint:fix": "eslint src --fix && yarn format",
     "prepublishOnly": "npm run test && npm run lint",
     "prepare": "tsc -p tsconfig-build.json"

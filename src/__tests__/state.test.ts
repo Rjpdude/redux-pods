@@ -7,7 +7,9 @@ describe('State tests', () => {
 
     expect(() => {
       game.draft.count = 10
-    }).toThrowError('State drafts can only be accessed within action creator or resolver functions.')
+    }).toThrowError(
+      'State drafts can only be accessed within action creator or resolver functions.'
+    )
   })
 
   it('throws error when attempting to generate drafts inside watcher function', () => {
@@ -20,7 +22,7 @@ describe('State tests', () => {
     })
 
     const store = generateStore({
-      game: game.reducer,
+      game: game.reducer
     })
 
     game.watch(() => {
@@ -53,7 +55,7 @@ describe('State tests', () => {
     })
 
     const store = generateStore({
-      game: game.reducer,
+      game: game.reducer
     })
 
     const watcherFn1 = jest.fn()
@@ -87,7 +89,7 @@ describe('State tests', () => {
     })
 
     const store = generateStore({
-      game: game.reducer,
+      game: game.reducer
     })
 
     const watcherFn = jest.fn()

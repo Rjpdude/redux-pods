@@ -12,11 +12,7 @@ import {
   WatcherCallback
 } from './exports'
 
-import {
-  isPrimitive,
-  wrap,
-  unwrap,
-} from './util'
+import { isPrimitive, wrap, unwrap } from './util'
 
 import { v4 as uuid } from 'uuid'
 import { createDraft, finishDraft, Draft } from 'immer'
@@ -136,7 +132,7 @@ export class State<S> {
 
   private triggerWatchers() {
     if (this.watchers) {
-      for (let watcherFn of this.watchers) {
+      for (const watcherFn of this.watchers) {
         try {
           watcherFn(this.current, this.previous)
         } catch (error) {
@@ -163,8 +159,8 @@ export class State<S> {
   /**
    * Generate a collection of stateful action handlers, which can access the `draft` property
    * to effect changes to the state's object in redux.
-   * 
-   * @param obj - The object of stateful action handlers. 
+   *
+   * @param obj - The object of stateful action handlers.
    */
   actions<O extends StatefulActionSet<S>>(obj: O): ActionSet<O> {
     return Object.entries(obj).reduce(
@@ -175,7 +171,7 @@ export class State<S> {
       {}
     ) as ActionSet<O>
   }
-  
+
   track<P>(trackedState: Exposed<State<P>>, trackerFn: StateTrackerFn<P, S>) {
     if (!(trackedState instanceof State) || (trackedState as any) === this) {
       throw new Error('Trackers must reference a different state object.')

@@ -26,7 +26,7 @@ describe('Reducer time tests', () => {
 
     const store = generateStore({
       user: user.reducer,
-      test: simpleReducer,
+      test: simpleReducer
     })
 
     let curTime = Date.now()

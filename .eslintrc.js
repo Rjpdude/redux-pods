@@ -5,6 +5,7 @@ module.exports = {
     node: true,
   },
   plugins: ['@typescript-eslint'],
+  ignorePatterns: ["*.test.ts", "*.test.tsx"],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
@@ -12,15 +13,10 @@ module.exports = {
   ],
   rules: {
     'no-unused-vars': 'off',
-    'no-console': 'warn',
+    'no-console': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/ban-types': 'off',
-
-    'react/display-name': 'off',
-    'react/jsx-curly-brace-presence': [
-      'warn',
-      { props: 'never', children: 'never' },
-    ],
+    '@typescript-eslint/no-explicit-any': 'off',
   },
   // globals: {
   //   React: true,
