@@ -24,7 +24,7 @@ const gameActions = gameState.actions({
 })
 ```
 
-After `gameState` has been [included as a reducer](#including-state-reducers), it's state and actions can be accessed and called directly within your react UI component:
+After `gameState` has been [included as a reducer](#including-state-reducers), it's state and actions can be accessed and called directly.
 
 ```tsx
 function Component() {
@@ -75,42 +75,9 @@ const reducers = combineReducers({
 })
 ```
 
-# State Hooks & Mapping
-
-There are multiple avenues available for accessing a pod state.
-
-## React Hooks
-
-One of the primary features of pods are their ability to supply their state through React hooks. A pod state can be hooked into a React component in one of two ways - individually through a state's `use` method (as domonstrated above), or with multiple pod states:
-
-```tsx
-import { usePods } from 'redux-pods'
-
-function Component() {
-  const [user, game] = usePods(userState, gameState)
-
-  return (
-    <span>{user.username} {game.score}</span>
-  )
-}
-```
-
-## Map
-
-Pods are aware of their location within the redux state tree. This is especially helpful for deeply nested states that need
-to be mapped, for example, within a `mapStateToProps` function:
-
-```ts
-function mapStateToProps(storeState) {
-  return {
-    game: gameState.map(storeState)
-  }
-}
-```
-
 # Actions
 
-Pod states can be updated in a multitude of ways - action handlers, async functions and trackers. The state's `draft` property - a mutable copy of the actual state object - is made available within action handlers.
+There are multiple ways to effect a state. States expose a `draft` property - a mutable copy of the actual state object - giving action handler functions the ability to effect changes to a state.
 
 Drafts can be mutated directly without effecting the actual state object itself. Drafts should not be leaked or accessed outside of stateful action handlers.
 
@@ -135,7 +102,7 @@ const accountActions = account.actions({
 })
 ```
 
-Action handlers also have access to their state's `current` property, allowing access the actual state value. This can be useful for updating the draft while maintaining an awareness of the actual state.
+States also expose a `current` property, allowing access the actual state value. This can be useful for updating the draft while maintaining an awareness of the actual state.
 
 ```ts
 const accountActions = account.actions({
@@ -151,7 +118,7 @@ const accountActions = account.actions({
 
 ## Resolve
 
-Async actions can make changes to a state by using the state's `resolve` callback function.
+States expose a `resolve` function, allowing dynamic state updates from anywhere in your application. For example, resolvers can be used to effect changes to a state within asynchronous functions.
 
 ```ts
 const userState = state({ 
@@ -167,8 +134,7 @@ const loadUser = async (key: string) => {
 }
 ```
 
-State resolvers can be called from anywhere, not just within async function. For example, it can also be called within
-a component's internal callback function:
+Resolvers can be called from anywhere, not just within async function. For example, it can also be called within a component's internal callback function:
 
 ```tsx
 import { gameState } from '.'
@@ -208,9 +174,37 @@ The above tracker tracks changes to the `gameState`, and sets the user's highsco
 
 To prevent infinite callback loops, trackers can only generate updates to their own state - the tracked state can only be overved, not updated.
 
-# Watch
+# Hooks & Mapping
 
-Similar to hooks, pod states can be observed from anywhere in your application through the state's `watch` method.
+One of the primary features of pods are their ability to supply their state through React hooks. A pod state can be hooked into a React component in one of two ways - individually through a state's `use` method, or with multiple states through the `usePods` function.
+
+```tsx
+import { usePods } from 'redux-pods'
+
+function Component() {
+  const [user, game] = usePods(userState, gameState)
+
+  return (
+    <span>{user.username} {game.score}</span>
+  )
+}
+```
+
+## Map
+
+Pods are aware of their location within the redux state tree. This is especially helpful for deeply nested states that need to be mapped, for example, within a `mapStateToProps` function.
+
+```ts
+function mapStateToProps(storeState) {
+  return {
+    game: gameState.map(storeState)
+  }
+}
+```
+
+## Watch
+
+Similar to hooks, pod states can be observed from anywhere in your application through the state's `watch` method. This can be helpful for generating side effects when a state is updated, for example, calling an API with an updated state property.
 
 ```ts
 const game = state({
@@ -224,8 +218,34 @@ game.watch((state, prevState) => {
 })
 ```
 
-This can be helpful for generating side effects when a state is updated, for example, calling an API with an updated state property.
-
 In a tradition react/redux application, these types of side effects are generally placed within a UI component, often resulting in inconsistent and unreliable outcomes. Extracting side effects into watcher functions can reduce strain on your application's UI layer, and more reliably react to a change in your state.
 
 To prevent infinite callback loops, `watch` can only be used to **observe** state changes. Accessing the state's `draft` or calling a state's action handler within a watch function will result in an error.
+
+## Custom hooks
+
+You can also create your own custom hooks using `watch`. When creating a custom hook, you should always unregister the watcher when the component unmounts using the unregister function returned by `watch`. The state's `current` property can be used to initialize your component's internal state.
+
+```tsx
+function UsernameAndScore() {
+  const [username, setUsername] = useState(user.current.username)
+  const [score, setScore] = useState(game.current.score)
+
+  useEffect(() => {
+    const unregisterUser = user.watch(({ username }) => {
+      setUsername(username)
+    })
+
+    const unregisterGame = game.watch(({ score }) => {
+      setScore(score)
+    })
+
+    return () => {
+      unregisterUser()
+      unregisterGame()
+    }
+  })
+
+  return [username, score]
+}
+```
