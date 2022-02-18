@@ -53,7 +53,7 @@ export class Pods {
       type,
       stateId: state.id,
       resolver: () => {
-        return fn(...(typeof args[0] === 'function' ? args[0]() : args))
+        return fn(...(typeof args[0] === 'function' ? [args[0]()] : args))
       }
     })
   }
