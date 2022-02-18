@@ -7,18 +7,18 @@ export enum ActionTypes {
   StateTracker = 'pod-action-state-tracker',
 }
 
-export interface InternalActionType {
+export interface InternalActionType<S> {
   type: ActionTypes
   stateId: string
   actionKey?: string
-  resolver: ActionResolver
+  resolver: ActionResolver<S>
 }
 
-export type ActionResolver = () => void
-export type DraftFn<S> = (state: Draft<S>) => Draft<S> | void
+export type ActionResolver<S> = () => S | void
+export type DraftFn<S> = (state: Draft<S>) => S | void
 export type ActionCreator<S> = (...args: any[]) => S | void
 export type StateTrackerFn<T, S> = (podState: Readonly<T>, prevPodState?: Readonly<T>) => S | void
-export type HookFn<S> = (state: S) => void
+export type WatcherCallback<S> = (curState: Readonly<S>, prevState?: Readonly<S>) => void
 
 export interface StatefulActionSet<S> {
     [key: string]: ActionCreator<S>
@@ -30,7 +30,7 @@ export type ActionSet<O extends StatefulActionSet<any>> = {
 
 export type Exposed<S extends State<any>> = Omit<S, 
   'setPath' | 'registerAction' | 'registerDraftFn' | 'registerTracker' | 'registerHook' |
-  'unregisterHook' | 'triggerTracker' | 'triggerHooks' | 'previous'
+  'unregisterHook' | 'triggerTracker' | 'triggerHooks' | 'previous' | 'sideEffects'
 >
 
 export type InferStates<A> = {

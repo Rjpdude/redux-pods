@@ -34,11 +34,9 @@ function podStateHook<S>(state: State<S>): S {
   const [podState, setPodState] = react.useState(state.current)
 
   react.useEffect(() => {
-    state.registerHook(setPodState)
-
-    return () => {
-      state.unregisterHook(setPodState)
-    }
+    return state.watch((curState) => {
+      setPodState(curState)
+    })
   })
 
   return podState

@@ -1,5 +1,5 @@
-export function reactError() {
-  throw new Error('The usePod function requires React 16.8.0 or higher.')
+export function isPrimitive(val: any) {
+  return val === null || ["string", "number", "bigint", "boolean", "symbol", "undefined"].includes(typeof val)
 }
 
 export function findPath(obj: any, toFind: any, ...path: string[]): string {
@@ -22,4 +22,8 @@ export function findPath(obj: any, toFind: any, ...path: string[]): string {
     }
   }
   return undefined
+}
+
+export function reactError() {
+  throw new Error('The usePod function requires React 16.8.0 or higher.')
 }

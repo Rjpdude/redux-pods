@@ -1,58 +1,48 @@
 import { Store } from 'redux'
 import { State } from './state'
-import { ActionTypes, DraftFn, ActionCreator, StateTrackerFn } from './types'
+import { ActionTypes, ActionCreator, StateTrackerFn } from './types'
 
 export class Pods {
   private store: Store
-  private states: Array<State<any>> = []
+  private states = new Set<State<any>>()
 
   register(store: Store) {
     this.store = store
-    this.states.forEach((state) => {
-      state.setPath(store.getState())
-    })
+    this.setStatePaths(store.getState())
+  }
+
+  setStatePaths(storeState: any) {
+    for (let state of this.states) {
+      state.setPath(storeState)
+    }
   }
 
   registerState(state: State<any>) {
-    if (!this.states.includes(state)) {
-      this.states.push(state)
+    if (this.states.has(state)) {
+      throw new Error('State has already been registered.')
     }
+    this.states.add(state)
   }
 
-  bindAction<S>(key: string, action: ActionCreator<S>, state: State<S>) {
+  createActionHandler<S>(action: ActionCreator<S>, state: State<S>) {
     return (...args: any[]) => {
-      this.triggerAction(state, {
-        type: ActionTypes.ActionHandler,
-        stateId: state.id,
-        key,
-        resolver: () => {
-          action(...args)
-        }
-      })
+      this.resolve(action, state, ActionTypes.ActionHandler, ...args)
     }
   }
 
-  bindDraftFn(fn: DraftFn<any>, state: State<any>) {
-    return () => {
-      this.triggerAction(state, {
-        type: ActionTypes.Draft,
-        stateId: state.id,
-        resolver: () => {
-          fn(state.current)
-        }
-      })
-    }
+  createStateTracker<T, S>(fn: StateTrackerFn<T, S>, state: State<S>, trackedState: State<T>) {
+    trackedState.watch((...states) => {
+      this.resolve(fn, state, ActionTypes.StateTracker, ...states)
+    })
   }
 
-  bindTrackerFn<T, S>(fn: StateTrackerFn<T, S>, state: State<S>, trackedState: State<T>) {
-    trackedState.registerTrackerAction((curState, prevState) => {
-      this.triggerAction(state, {
-        type: ActionTypes.StateTracker,
-        stateId: state.id,
-        resolver: () => {
-          fn(curState, prevState)
-        }
-      })
+  resolve<T extends (...args: any[]) => any>(fn: T, state: State<any>, type: ActionTypes, ...args: (Parameters<T> | [() => Parameters<T>])) {
+    this.triggerAction(state, {
+      type,
+      stateId: state.id,
+      resolver: () => {
+        return fn(...(typeof args[0] === 'function' ? args[0]() : args))
+      }
     })
   }
 
