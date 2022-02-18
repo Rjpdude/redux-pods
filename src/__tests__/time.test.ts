@@ -2,10 +2,10 @@ import { state } from '..'
 import { generateStore } from '../test-utils'
 
 describe('Reducer time tests', () => {
-  test('time difference against normal reducer is less than 4 milliseconds', () => {
+  test('time difference against normal reducer is less than 10 milliseconds', () => {
     const user = state({ username: '', email: '' })
 
-    const userActions = user.actions({
+    const userActions = user.actionSet({
       setUsername: (str: string) => {
         user.draft.username = str
       },
@@ -43,8 +43,8 @@ describe('Reducer time tests', () => {
 
     const secondTime = Date.now() - curTime
 
-    // expect the difference in processing pod actions to never exceed more than 3
+    // expect the difference in processing pod actions to never exceed more than 9
     // milliseconds more than that of a normal reducer actions
-    expect(secondTime - firstTime).toBeLessThan(4)
+    expect(secondTime - firstTime).toBeLessThan(10)
   })
 })

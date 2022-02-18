@@ -13,7 +13,7 @@ const gameState = state({
   score: 0
 })
 
-const gameActions = gameState.actions({
+const gameActions = gameState.actionSet({
   add: (points: number) => {
     game.draft.score += points
   },
@@ -83,7 +83,7 @@ Drafts can be mutated directly without effecting the actual state object itself.
 
 ## Action handlers
 
-A set of action handlers can be created through a state's `actions` method. The action handlers can then be imported and called from anywhere in your application.
+Action handlers can be created trough either `action` or `actionSet`, to create single action handlers or a set of multiple. They can then be imported and called from anywhere in your application.
 
 ```ts
 const account = state({
@@ -91,7 +91,7 @@ const account = state({
   transactions: []
 })
 
-const accountActions = account.actions({
+const accountActions = account.actionSet({
   setBalance: (balance: number) => {
     account.draft.balance = balance
   },
@@ -100,20 +100,23 @@ const accountActions = account.actions({
     account.draft.transactions.push(transaction)
   }
 })
+
+// accountActions.setBalance(5.95)
+// accountActions.addTransactions({ ... })
 ```
 
 States also expose a `current` property, allowing access the actual state value. This can be useful for updating the draft while maintaining an awareness of the actual state.
 
 ```ts
-const accountActions = account.actions({
-  setBalance: (balance: number) => {
-    account.draft.balance = balance
+const setBalance = account.action((to: number) => {
+  account.draft.balance = balance
 
-    if (account.current.balance !== account.draft.balance) {
-      ...
-    }
+  if (account.current.balance !== account.draft.balance) {
+    ...
   }
 })
+
+// setBalance(5.95)
 ```
 
 ## Resolve

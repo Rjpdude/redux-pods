@@ -6,6 +6,7 @@ import {
   InternalActionType,
   DraftFn,
   StatefulActionSet,
+  ActionCreator,
   ActionSet,
   Exposed,
   StateTrackerFn,
@@ -162,13 +163,11 @@ export class State<S> {
     return this._draft || (this._draft = createDraft(this.current))
   }
 
-  /**
-   * Generate a collection of stateful action handlers, which can access the `draft` property
-   * to effect changes to the state's object in redux.
-   *
-   * @param obj - The object of stateful action handlers.
-   */
-  actions<O extends StatefulActionSet<S>>(obj: O): ActionSet<O> {
+  action<A extends ActionCreator<S>>(actionHandler: A): (...args: Parameters<A>) => void {
+    return podsInstance.createActionHandler(actionHandler, this)
+  }
+
+  actionSet<O extends StatefulActionSet<S>>(obj: O): ActionSet<O> {
     return Object.entries(obj).reduce(
       (actionSet, [key, fn]) => ({
         ...actionSet,

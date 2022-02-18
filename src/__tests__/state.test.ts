@@ -15,7 +15,7 @@ describe('State tests', () => {
   it('throws error when attempting to generate drafts inside watcher function', () => {
     const game = state({ count: 0 })
 
-    const gameActions = game.actions({
+    const gameActions = game.actionSet({
       setCount: (to: number) => {
         game.draft.count = to
       }
@@ -48,7 +48,7 @@ describe('State tests', () => {
   it('throws error when attempting to call action handlers within watcher function', () => {
     const game = state({ count: 0 })
 
-    const gameActions = game.actions({
+    const gameActions = game.actionSet({
       setCount: (to: number) => {
         game.draft.count = to
       }
@@ -81,7 +81,7 @@ describe('State tests', () => {
   it('notifies watcher functions', () => {
     const game = state({ count: 0 })
 
-    const gameActions = game.actions({
+    const gameActions = game.actionSet({
       setCount: (to: number) => {
         game.draft.count = to
       }
@@ -115,7 +115,7 @@ describe('State tests', () => {
   it('unregisters watcher functions', () => {
     const game = state({ count: 0 })
 
-    const gameActions = game.actions({
+    const gameActions = game.actionSet({
       setCount: (to: number) => {
         game.draft.count = to
       }
@@ -142,7 +142,7 @@ describe('State tests', () => {
   it('doesnt notify watcher functions when state hasnt changed', () => {
     const game = state({ count: 0 })
 
-    const gameActions = game.actions({
+    const gameActions = game.actionSet({
       setCount: (to: number) => {
         if (to < 100) {
           game.draft.count = to

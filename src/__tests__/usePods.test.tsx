@@ -31,10 +31,8 @@ describe('usePods and State use react hook', () => {
   it('updates state obj', () => {
     const player = state({ username: 'ryan' })
 
-    const actions = player.actions({
-      setUsername: (username: string) => {
-        player.draft.username = username
-      }
+    const setUsername = player.action((to: string) => {
+      player.draft.username = to
     })
 
     const store = generateStore({
@@ -56,7 +54,7 @@ describe('usePods and State use react hook', () => {
     expect(output.find(Component).text()).toBe('ryan')
 
     act(() => {
-      actions.setUsername('bob')
+      setUsername('bob')
     })
 
     expect(output.find(Component).text()).toBe('bob')

@@ -18,7 +18,7 @@ describe('Primitive state types', () => {
   it('updates primitive state values', () => {
     const num = state(10)
 
-    const actions = num.actions({
+    const actions = num.actionSet({
       set: (to: number) => {
         return to
       },
@@ -41,7 +41,7 @@ describe('Primitive state types', () => {
   it('throws error when attempting to draft primitive state val', () => {
     const num = state(10)
 
-    const actions = num.actions({
+    const actions = num.actionSet({
       deduct: (by: number) => {
         return num.draft - by
       }

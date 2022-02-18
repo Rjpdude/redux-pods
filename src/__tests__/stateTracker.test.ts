@@ -24,7 +24,7 @@ describe('State tracker functions', () => {
       currentScore: -1
     })
 
-    const userActions = user.actions({
+    const userActions = user.actionSet({
       loadUser: (username: string, currentScore: number) => {
         user.draft.username = username
         user.draft.currentScore = currentScore
@@ -64,7 +64,7 @@ describe('State tracker functions', () => {
       currentScore: -1
     })
 
-    const userActions = user.actions({
+    const userActions = user.actionSet({
       loadUser: (username: string, currentScore: number) => {
         user.draft.username = username
         user.draft.currentScore = currentScore
