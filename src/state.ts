@@ -47,7 +47,7 @@ export class State<S> {
   /**
    * The drafted state value, set when a state resolver function accesses the `draft` member.
    */
-  private _draft: Draft<S>
+  private _draft: Draft<S> | undefined
 
   /**
    * The state's current value within the redux store.
@@ -88,7 +88,7 @@ export class State<S> {
     let res = state
     try {
       if (action.stateId === this.id) {
-        res = this.resolveAction(state, action.resolver)
+        res = this.resolveAction(state, action.resolver as ActionResolver<S>)
       }
     } catch (error) {
       console.error('Error resolving pod state action handler.', error)

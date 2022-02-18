@@ -52,7 +52,7 @@ export function findPath(obj: any, toFind: any, ...path: string[]): string {
       }
     }
   }
-  return undefined
+  return ''
 }
 
 export function reactError() {
