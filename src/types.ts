@@ -1,5 +1,5 @@
 import { Draft } from 'immer'
-import { State } from '.'
+import { State } from './exports'
 
 export enum ActionTypes {
   ActionHandler = 'pod-action-handler',

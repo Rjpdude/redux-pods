@@ -1,8 +1,14 @@
-import { state } from '..'
+import { state } from '../exports'
 import { generateStore } from '../test-utils'
 import { combineReducers } from 'redux'
 
 describe('State paths & state mapping', () => {
+  it('throws error when state is initialized with null or undefined', () => {
+    expect(() => {
+      state(null)
+    }).toThrowError('Pod states should cannot be initialized with null or undefined.')
+  })
+
   it('detects paths', () => {
     const user = state({ username: 'ryan' })
     const game = state({ score: 0 })

@@ -1,4 +1,5 @@
-import pods, {
+import {
+  podsInstance,
   usePods,
   ActionTypes,
   ActionResolver,
@@ -9,13 +10,12 @@ import pods, {
   Exposed,
   StateTrackerFn,
   WatcherCallback
-} from '.'
+} from './exports'
 
 import {
   isPrimitive,
-  checkForPrimitive,
-  unrwapPrimitive,
-  findPath
+  wrap,
+  unwrap,
 } from './util'
 
 import { v4 as uuid } from 'uuid'
@@ -66,23 +66,21 @@ export class State<S> {
   private watchers: Set<WatcherCallback<S>>
 
   constructor(initialState: S) {
-    this.initialState = checkForPrimitive(initialState)
-    this.current = this.initialState
-    this.init()
-  }
-
-  init() {
-    if (this.initialState === null || this.initialState === undefined) {
-      console.warn(
-        'Pod states should not be initialized with null or undefined.'
+    if (initialState === null || initialState === undefined) {
+      throw new Error(
+        'Pod states should cannot be initialized with null or undefined.'
       )
     }
-    pods.registerState(this)
+
+    this.initialState = wrap(initialState)
+    this.current = this.initialState
+
+    podsInstance.registerState(this)
   }
 
   reducer = (state: S = this.initialState, action: InternalActionType<S>) => {
     if (action.type === ActionTypes.ResolvePrimitives) {
-      return this.resolvePrimitives(state)
+      return this.resolveWrappedState(state)
     }
 
     let res = state
@@ -112,8 +110,8 @@ export class State<S> {
     return (this._draft ? finishDraft(this._draft) : state) as S
   }
 
-  private resolvePrimitives(state: S) {
-    const unwrapped = unrwapPrimitive(state)
+  private resolveWrappedState(state: S) {
+    const unwrapped = unwrap(state)
     this.initialState = unwrapped
     this.current = unwrapped
     return unwrapped
@@ -172,7 +170,7 @@ export class State<S> {
     return Object.entries(obj).reduce(
       (actionSet, [key, fn]) => ({
         ...actionSet,
-        [key]: pods.createActionHandler(fn, this)
+        [key]: podsInstance.createActionHandler(fn, this)
       }),
       {}
     ) as ActionSet<O>
@@ -182,11 +180,11 @@ export class State<S> {
     if (!(trackedState instanceof State) || (trackedState as any) === this) {
       throw new Error('Trackers must reference a different state object.')
     }
-    pods.createStateTracker(trackerFn, this, trackedState)
+    podsInstance.createStateTracker(trackerFn, this, trackedState)
   }
 
   resolve(draftFn: DraftFn<S>) {
-    pods.resolve(draftFn, this, ActionTypes.Draft, () => {
+    podsInstance.resolve(draftFn, this, ActionTypes.Draft, () => {
       return isPrimitive(this.current) ? (this.current as any) : this.draft
     })
   }
@@ -223,15 +221,8 @@ export class State<S> {
     return get(storeState, this.path)
   }
 
-  setPath(storeState: any) {
-    try {
-      this.path = findPath(storeState, this.initialState)
-    } catch (error) {
-      console.error(
-        'Unable to located state path within redux store tree.',
-        this.initialState
-      )
-    }
+  setPath(path: string) {
+    this.path = path
   }
 
   getPath() {

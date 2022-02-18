@@ -1,6 +1,10 @@
-import { State } from './state'
+import { Store } from 'redux'
+import { podsInstance, State, Exposed, InferStates } from './exports'
 import { reactError } from './util'
-import { Exposed, InferStates } from '.'
+
+export function register(store: Store) {
+  podsInstance.register(store)
+}
 
 export function state<S>(initialState: S): Exposed<State<S>> {
   return new State(initialState)
@@ -18,7 +22,7 @@ export function usePods<A extends any[]>(
     : args.map(podStateHook)
 }
 
-function podStateHook<S>(state: State<S>): S {
+export function podStateHook<S>(state: State<S>): S {
   let react: any
   try {
     react = require('react')

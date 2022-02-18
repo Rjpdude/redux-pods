@@ -5,4 +5,4 @@ export * from './types'
 export * from './pods'
 export * from './state'
 
-export default new Pods()
+export const podsInstance = new Pods()

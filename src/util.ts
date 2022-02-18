@@ -1,36 +1,42 @@
+import { State } from './exports'
+
 export function isPrimitive(val: any) {
   return (
     val === null ||
-    ['string', 'number', 'bigint', 'boolean', 'undefined'].includes(typeof val)
+    ['string', 'number', 'bigint', 'boolean', 'bigint', 'symbol', 'undefined'].includes(typeof val)
   )
 }
 
-export function wrapPrimitive(val: any) {
-  const type = typeof val
-  return type === 'string'
-    ? new String(val)
-    : type === 'number'
-    ? new Number(val)
-    : type === 'boolean'
-    ? new Boolean(val)
-    : type === 'bigint' && BigInt(val)
+export function wrap<T>(val: T): T {
+  return Object(val)
 }
 
-export function unrwapPrimitive(val: any) {
-  return val instanceof String ||
-    val instanceof Number ||
-    val instanceof Boolean ||
-    val instanceof BigInt ||
-    val instanceof Symbol
-    ? val.valueOf()
-    : val
+export function unwrap<T>(val: T): T {
+  return (val instanceof Object ? (val as Object).valueOf() : val) as T
 }
 
-export function checkForPrimitive<T>(val: T): T {
-  if (isPrimitive(val)) {
-    return (wrapPrimitive(val) as unknown) as T
+export function resolveStatePaths(obj: any, states: Set<State<any>>, ...path: string[]) {
+  for (const [key, val] of Object.entries(obj)) {
+    if (typeof val !== 'object') {
+      continue
+    }
+
+    const curPath = path.concat(key)
+
+    for (const state of states) {
+      if (state.current === val) {
+        state.setPath(curPath.join('.'))
+        states.delete(state)
+
+        if (states.size === 0) {
+          return
+        }
+        break
+      }
+    }
+
+    resolveStatePaths(val, states, ...curPath)
   }
-  return val
 }
 
 export function findPath(obj: any, toFind: any, ...path: string[]): string {
@@ -52,7 +58,7 @@ export function findPath(obj: any, toFind: any, ...path: string[]): string {
       }
     }
   }
-  return ''
+  return '' // undefined
 }
 
 export function reactError() {

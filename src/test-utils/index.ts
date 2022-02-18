@@ -1,11 +1,11 @@
 import { createStore, combineReducers, Reducer } from 'redux'
-import pods from '../'
+import { podsInstance } from '../exports'
 
 export function generateStore<R extends { [key: string]: Reducer }>(
   reducers: R
 ) {
   const store = createStore(combineReducers(reducers))
-  pods.register(store)
+  podsInstance.register(store)
   return store
 }
 

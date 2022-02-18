@@ -1,5 +1,6 @@
 import { Store } from 'redux'
-import { State, ActionTypes, ActionCreator, StateTrackerFn } from '.'
+import { State, ActionTypes, ActionCreator, StateTrackerFn } from './exports'
+import { resolveStatePaths } from './util'
 
 export class Pods {
   private store: Store
@@ -11,9 +12,7 @@ export class Pods {
   }
 
   setStatePaths(storeState: any) {
-    for (let state of this.states) {
-      state.setPath(storeState)
-    }
+    resolveStatePaths(storeState, new Set(this.states))
 
     this.store.dispatch({
       type: ActionTypes.ResolvePrimitives
