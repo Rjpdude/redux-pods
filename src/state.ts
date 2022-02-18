@@ -23,14 +23,46 @@ import { createDraft, finishDraft, Draft } from 'immer'
 import get from 'lodash.get'
 
 export class State<S> {
+  /**
+   * The state's unique id. Used internally to track action handlers.
+   */
   public readonly id = uuid()
+
+  /**
+   * The state's path within the redux store tree.
+   */
   private path: string
+
+  /**
+   * The state's lock status. When true, it prevents a state draft from being created.
+   * This should only ever be false when resolving an action within the reducer.
+   */
   private locked = true
 
+  /**
+   * The initial state value.
+   */
   private initialState: Readonly<S>
+
+  /**
+   * The drafted state value, set when a state resolver function accesses the `draft` member.
+   */
   private _draft: Draft<S>
+
+  /**
+   * The state's current value within the redux store.
+   */
   public current: Readonly<S>
+
+  /**
+   * The previous state value.
+   */
   public previous: Readonly<S>
+
+  /**
+   * A set of state watcher callback functions, which may or may not have access to modify the draft.
+   * Called outside of the reducer after a change has been detected in the state value.
+   */
   private watchers: Set<WatcherCallback<S>>
 
   constructor(initialState: S) {
@@ -50,10 +82,7 @@ export class State<S> {
 
   reducer = (state: S = this.initialState, action: InternalActionType<S>) => {
     if (action.type === ActionTypes.ResolvePrimitives) {
-      const unwrapped = unrwapPrimitive(state)
-      this.initialState = unwrapped
-      this.current = unwrapped
-      return unwrapped
+      return this.resolvePrimitives(state)
     }
 
     let res = state
@@ -81,6 +110,13 @@ export class State<S> {
       return res as S
     }
     return (this._draft ? finishDraft(this._draft) : state) as S
+  }
+
+  private resolvePrimitives(state: S) {
+    const unwrapped = unrwapPrimitive(state)
+    this.initialState = unwrapped
+    this.current = unwrapped
+    return unwrapped
   }
 
   private unlock(state: Readonly<S>) {
@@ -126,6 +162,12 @@ export class State<S> {
     return this._draft || (this._draft = createDraft(this.current))
   }
 
+  /**
+   * Generate a collection of stateful action handlers, which can access the `draft` property
+   * to effect changes to the state's object in redux.
+   * 
+   * @param obj - The object of stateful action handlers. 
+   */
   actions<O extends StatefulActionSet<S>>(obj: O): ActionSet<O> {
     return Object.entries(obj).reduce(
       (actionSet, [key, fn]) => ({
@@ -135,7 +177,7 @@ export class State<S> {
       {}
     ) as ActionSet<O>
   }
-
+  
   track<P>(trackedState: Exposed<State<P>>, trackerFn: StateTrackerFn<P, S>) {
     if (!(trackedState instanceof State) || (trackedState as any) === this) {
       throw new Error('Trackers must reference a different state object.')
