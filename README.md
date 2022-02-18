@@ -1,8 +1,10 @@
 # Redux Pods
 
+**An integrated framework for Redux which makes the composition and management of reducers and action creators seamless and easy.**
+
 ## Example
 
-The following example creates a simple state object with a `score` property, and two action handlers to `add` and `remove` points.
+The following example creates a simple state object with a `score` property, along with an action handler to add points to the score.
 
 ```ts
 import { state } from 'redux-pods'
@@ -11,15 +13,11 @@ const gameState = state({
   score: 0
 })
 
-const gameActions = gameState.actionSet({
-  add: (points: number) => {
+const addToScore = gameState.action(
+  (points: number) => {
     gameState.draft.score += points
-  },
-
-  remove: (points: number) => {
-    gameState.draft.score -= points
   }
-})
+)
 ```
 
 The following is a simple React counter component that displays the score and a button to increment it.
@@ -32,7 +30,7 @@ function Counter() {
     <div>
       <p>Score: {score}</p>
 
-      <button onClick={() => gameActions.add(1)}>
+      <button onClick={() => addToScore(1)}>
         Click me
       </button>
     </div>
@@ -44,7 +42,7 @@ function Counter() {
 
 Pod states can be included in your store exactly like traditional reducer functions. *It's that easy!*
 
-To initialize the package, simply import and call `register` with your store object after it's been created.
+To initialize the package, simply import and call `register` with your store object after it's been created. This is an example of a simple redux store which includes [gameState](#example) from the example above:
 
 ```ts
 import { gameState } from './gameState'
@@ -60,9 +58,9 @@ const store = createStore(
 register(store)
 ```
 
-This is an example of a simple redux store which includes [gameState](#example) from the example above. This store's initial state will look like:
+The store's initial state will look like:
 
-```
+```ts
 {
   game: {
     score: 0
@@ -70,24 +68,32 @@ This is an example of a simple redux store which includes [gameState](#example) 
 }
 ```
 
-# Action handlers
+# Actions
 
-Pod state's expose an `action` method to produce individual action handlers, and `actionSet` to produce a set of multiple action handlers. Action handlers can accept any number of arguments and have the ability to effect state updates through the state's `draft` property.
+**Pod states can be updated using action handlers, resolver functions and state trackers.**
 
+State changes can be effected within action callbacks through the state's `draft` property - a mutable copy of the state object produced by [Immer](https://immerjs.github.io/immer/). After the action callback is fully resolved, the draft is finalized and returned as the new state object.
 
-Working off the above [gameState example](#example), we can produce an individual multiplier action like so:
+You can also access the state's `current` property - the actual current state object. This is usefull for maintining an awareness of the current state to compare against pending changes on the draft.
+___
+
+## Action handlers
+
+Action handlers can be generated individually through a state's `action` method, or in a set through a state's `actionSet` method. Below is an example of an action set for [gameState](#example):
 
 ```ts
-export const multiply = gameState.action(
-  (mult: number) => {
+const gameActions = gameState.actionSet({
+  multiplyScore: (mult: number) => {
     gameState.draft.score *= mult
+  },
+
+  resetScore: () => {
+    gameState.draft.score = 0
   }
-)
+})
 ```
 
-The `multiply` function accepts a multiplier argument and updates the `score` accordingly. It can then be imported and called from anywhere in the application.
-
-# Resolve
+## Resolve
 
 States expose a `resolve` function, allowing dynamic state updates from anywhere in your application. For example, resolvers can be used to effect changes to a state within asynchronous functions.
 
@@ -105,7 +111,7 @@ const loadUser = async (key: string) => {
 }
 ```
 
-# Trackers
+## Trackers
 
 States expose a `track` method to track changes to another state and effect changes accordingly
 
@@ -139,7 +145,7 @@ function Component() {
 }
 ```
 
-# Map
+## Map
 
 Pods are aware of their location within the redux state tree. This is especially helpful for deeply nested states that need to be mapped, for example, within a `mapStateToProps` function.
 
@@ -151,7 +157,7 @@ function mapStateToProps(storeState) {
 }
 ```
 
-# Watch
+## Watch
 
 Similar to hooks, pod states can be observed from anywhere in your application through the state's `watch` method. This can be helpful for generating side effects when a state is updated, for example, calling an API with an updated state property.
 
@@ -171,7 +177,7 @@ In a tradition react/redux application, these types of side effects are generall
 
 To prevent infinite callback loops, `watch` can only be used to **observe** state changes. Accessing the state's `draft` or calling a state's action handler within a watch function will result in an error.
 
-# Custom hooks
+## Custom hooks
 
 You can also create your own custom hooks using `watch`. When creating a custom hook, you should always unregister the watcher when the component unmounts using the unregister function returned by `watch`. The state's `current` property can be used to initialize your component's internal state.
 
@@ -210,4 +216,3 @@ You should also take care to never directly mutate a state's `current` property,
 ## Actions
 
 Action handlers share many of the same best-practice standards as traditional reducer functions. They should be simple in nature - resource intensive computations should be minimised as much as possible.
-
