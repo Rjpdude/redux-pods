@@ -74,7 +74,7 @@ The store's initial state will look like:
 
 State changes can be effected within action callbacks through the state's `draft` property - a mutable copy of the state object produced by [Immer](https://immerjs.github.io/immer/). After the action callback is fully resolved, the draft is finalized and returned as the new state object.
 
-You can also access the state's `current` property - the actual current state object. This is usefull for maintining an awareness of the current state to compare against pending changes on the draft.
+You can also access the state's `current` property - the actual current state object. This is useful for maintining an awareness of the current state to compare against pending changes on the draft.
 
 ## Action handlers
 
@@ -161,11 +161,7 @@ function mapStateToProps(storeState) {
 Similar to hooks, pod states can be observed from anywhere in your application through the state's `watch` method. This can be helpful for generating side effects when a state is updated, for example, calling an API with an updated state property.
 
 ```ts
-const game = state({
-  score: 0
-})
-
-game.watch((state, prevState) => {
+gameState.watch((state, prevState) => {
   if (state.score !== prevState.score) {
     syncGameScore(state.score)
   }
