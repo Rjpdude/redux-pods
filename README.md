@@ -156,7 +156,7 @@ While this sort of approach is generally discouraged in favor of normal action h
 
 ## Trackers
 
-Pod states can track changes to other pod states through their `track` method:
+States expose a `track` method to track changes to another state and effect changes accordingly
 
 ```ts
 const userState = state({
@@ -246,6 +246,6 @@ function useData() {
     }
   }, [])
 
-  return [username, score]
+  return { username, score }
 }
 ```
