@@ -1,5 +1,6 @@
 import { Store } from 'redux'
-import { State, ActionTypes, ActionCreator, StateTrackerFn } from './exports'
+import { v4 as uuid } from 'uuid'
+import { State, ActionTypes, ActionCreator, StateTrackerFn, Transmitter } from './exports'
 import { resolveStatePaths } from './util'
 
 export class Pods {
@@ -24,6 +25,22 @@ export class Pods {
       throw new Error('State has already been registered.')
     }
     this.states.add(state)
+  }
+
+  createTransmitterFn<T>(): Transmitter<T> {
+    const id = uuid()
+    const dispatch = (a: any) => this.store.dispatch(a)
+
+    function transmitterFn(data: T) {
+      dispatch({
+        type: ActionTypes.Transmitter,
+        transmitterId: id,
+        transmittedData: data,
+      })
+    }
+    transmitterFn.id = id
+    
+    return transmitterFn
   }
 
   createActionHandler<S>(action: ActionCreator<S>, state: State<S>) {

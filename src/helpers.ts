@@ -1,5 +1,5 @@
 import { Store } from 'redux'
-import { podsInstance, State, Exposed, InferStates } from './exports'
+import { podsInstance, State, Exposed, InferStates, Transmitter } from './exports'
 import { reactError } from './util'
 
 export function register(store: Store) {
@@ -23,6 +23,10 @@ export function state<S>(initialState: S) {
   })
 
   return boundReducer
+}
+
+export function onTransmit<T = any>() {
+  return podsInstance.createTransmitterFn<T>()
 }
 
 export function usePods<A extends any[]>(

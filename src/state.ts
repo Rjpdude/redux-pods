@@ -4,6 +4,8 @@ import {
   ActionTypes,
   ActionResolver,
   InternalActionType,
+  Transmitter,
+  TransmitReolver,
   DraftFn,
   StatefulActionSet,
   ActionCreator,
@@ -39,6 +41,11 @@ export class State<S> {
    * The drafted state value, set when a state resolver function accesses the `draft` member.
    */
   private _draft: Draft<S> | undefined
+
+  /**
+   * A map of callbacks to resolve incoming data transmittance.
+   */
+  private transmitFnMap: Map<string, TransmitReolver<any, S>>
 
   /**
    * The state's lock status. When true, it prevents a state draft from being created.
@@ -88,7 +95,9 @@ export class State<S> {
 
     let res = state
     try {
-      if (action.stateId === this.id) {
+      if (action.type === ActionTypes.Transmitter) {
+        res = this.resolveTransmitterAction(state, action.transmitterId as string, action.transmittedData)
+      } else if (action.stateId === this.id) {
         res = this.resolveAction(state, action.resolver as ActionResolver<S>)
       }
     } catch (error) {
@@ -97,6 +106,20 @@ export class State<S> {
       this.lock(res)
     }
     return res
+  }
+
+  private resolveTransmitterAction(state: S, id: string, data: any) {
+    if (!this.transmitFnMap || !this.transmitFnMap.has(id)) {
+      return state
+    }
+
+    return this.resolveAction(state, () => {
+      const fn = this.transmitFnMap.get(id)
+
+      if (typeof fn === 'function') {
+        fn(data, this.draft)
+      }
+    })
   }
 
   private resolveAction(state: Readonly<S>, resolver: ActionResolver<S>) {
@@ -165,6 +188,18 @@ export class State<S> {
 
   action<A extends ActionCreator<S>>(actionHandler: A): (...args: Parameters<A>) => void {
     return podsInstance.createActionHandler(actionHandler, this)
+  }
+
+  on = <T>(transmitter: Transmitter<T>, fn: TransmitReolver<T, S>) => {
+    if (!this.transmitFnMap) {
+      this.transmitFnMap = new Map()
+    }
+
+    if (this.transmitFnMap.has(transmitter.id)) {
+      throw new Error('This state already has a resolver for this transmitter.')
+    }
+
+    this.transmitFnMap.set(transmitter.id, fn)
   }
 
   actionSet<O extends StatefulActionSet<S>>(obj: O): ActionSet<O> {
