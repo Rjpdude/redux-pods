@@ -1,8 +1,8 @@
 # Redux Pods
 
-**An integrated framework for Redux which makes the composition and management of reducers and action creators seamless and easy.**
+**An integrated framework for the management and composition of Redux state.**
 
-## Example
+# Example
 
 The following example creates a simple state object with a `score` property, along with an action handler to add points to the score.
 
@@ -94,7 +94,7 @@ const gameActions = gameState.actionSet({
 
 ## Resolve
 
-States expose a `resolve` function, allowing dynamic state updates from anywhere in your application. For example, resolvers can be used to effect changes to a state within asynchronous functions.
+States expose a `resolve` method, allowing dynamic state updates from anywhere in your application. For example, resolvers can be used to effect changes to a state within asynchronous functions.
 
 ```ts
 const userState = state({ 
@@ -112,25 +112,33 @@ const loadUser = async (key: string) => {
 
 ## Trackers
 
-States expose a `track` method to track changes to another state and effect changes accordingly
+States expose a `track` method to track changes made to another state. When a change is detected, tracker callbacks are provided the tracked state's current and previous value, and can draft updates as a result.
+
+Consider a user state with a `highscore` property that needs to be updated everytime the game state's `score` property is higher:
 
 ```ts
 const userState = state({
   highscore: 0
 })
 
-userState.track(gameState, (state, prevState) => {
-  if (state.score > prevState.score) {
-    userState.draft.highscore = state.score
+userState.track(gameState, ({ score }) => {
+  if (score > userState.current.highscore) {
+    userState.draft.highscore = score
   }
 })
 ```
 
-To prevent infinite callback loops, trackers can only generate updates to their own state - the tracked state can only be observed, not updated.
+# State observance
 
-# Hooks & Mapping
+**Changes to pod states can be observed through React hooks, watchers and custom React hooks.**
 
-One of the primary features of pods are their ability to supply their state through React hooks. A pod state can be hooked into a React component in one of two ways - individually through a state's `use` method, or with multiple states through the `usePods` function.
+Pod states provide internal observance methods which can serve as an alternative to traditional patterns like the `mapStateToProps` and prop comparisons within `componentDidUpdate`.
+
+In many React/Redux applications, reactions to a change in the redux state are generally placed within components. This practice places unnecessary strain on the UI, and also obfuscates separation of concerns.
+
+## Hooks
+
+State's can be used in React components through their internal `use` hook ([see the example above](#example)). You can also use multiple state values at once with the `usePods` hook:
 
 ```tsx
 import { usePods } from 'redux-pods'
@@ -144,21 +152,11 @@ function Component() {
 }
 ```
 
-## Map
-
-Pods are aware of their location within the redux state tree. This is especially helpful for deeply nested states that need to be mapped, for example, within a `mapStateToProps` function.
-
-```ts
-function mapStateToProps(storeState) {
-  return {
-    game: gameState.map(storeState)
-  }
-}
-```
-
 ## Watch
 
-Similar to hooks, pod states can be observed from anywhere in your application through the state's `watch` method. This can be helpful for generating side effects when a state is updated, for example, calling an API with an updated state property.
+Changes to a state can be observed and acted upon using their internal `watch` method. When a change in state is detected, watcher callbacks are resolved with the state's current and previous value. An `unregister` function is returned as a response to unregister the watcher as necessary.
+
+Consider an API call that needs to be made everytime the game state's `score` property changes.
 
 ```ts
 gameState.watch((state, prevState) => {
@@ -168,41 +166,80 @@ gameState.watch((state, prevState) => {
 })
 ```
 
-In a tradition react/redux application, these types of side effects are generally placed within a UI component, often resulting in inconsistent and unreliable outcomes. Extracting side effects into watcher functions can reduce strain on your application's UI layer, and more reliably react to a change in your state.
-
-To prevent infinite callback loops, `watch` can only be used to **observe** state changes. Accessing the state's `draft` or calling a state's action handler within a watch function will result in an error.
-
 ## Custom hooks
 
-You can also create your own custom hooks using `watch`. When creating a custom hook, you should always unregister the watcher when the component unmounts using the unregister function returned by `watch`. The state's `current` property can be used to initialize your component's internal state.
+You can create custom hooks to supply specific sets of state values. Consider a custom hook that filters a state's list of products by their price:
 
 ```tsx
+function productsPricedOver(num: number) {
+  const state = someState.use()
+
+  const filtered = React.useMemo(() => {
+    return state.products.filter(
+      (product) => product.price > num
+    )
+  }, [num, state.products])
+
+  return filtered
+}
+
+function Component() {
+  const products = productsPricedOver(50)
+
+  return (
+    ...
+  )
+}
+```
+
+You can also create custom hooks in conjunction with a state watcher. While this approach is generally unnecessary, if you do need to create one, be sure to unregister the watcher when the component unmounts:
+
+```ts
 function useData() {
-  const [username, setUsername] = useState(user.current.username)
-  const [score, setScore] = useState(game.current.score)
+  ...
 
   useEffect(() => {
-    const unregisterUser = user.watch(({ username }) => {
-      setUsername(username)
-    })
+    const unregister = gameState.watch((game) => {
 
-    const unregisterGame = game.watch(({ score }) => {
-      setScore(score)
+      /** implementation **/
+
     })
 
     return () => {
-      unregisterUser()
-      unregisterGame()
+      unregister()
     }
   }, [])
 
-  return { username, score }
+  ...
+}
+```
+
+## Map
+
+Pod states are aware of their location within the redux state tree. Using their internal `map` method, states can be mapped within functions like `mapStateToProps`.
+
+```ts
+function mapStateToProps(storeState) {
+  return {
+    game: gameState.map(storeState)
+  }
+}
+```
+
+You can also map specific properties of the state value by supplying a function as the second argument:
+
+```ts
+function mapStateToProps(storeState) {
+  return {
+    count: gameState.map(storeState, (game) => game.count)
+  }
 }
 ```
 
 # Considerations
 
-The purpose of redux-pods is to modularize redux state objects and combine them with various types of action handlers, hopefully leading to a greater separation of concerns between the data & UI layers of your application. There are, however, a few things to take into consideration.
+The purpose of redux-pods is to modularize redux state objects and combine them with various types of action handlers, hopefully leading to a greater separation of concerns between the data & UI layers of your application. 
+There are, however, a few things to take into consideration.
 
 ## States
 
