@@ -25,7 +25,7 @@ export function state<S>(initialState: S) {
   return boundReducer
 }
 
-export function onTransmit<T = any>() {
+export function transmitter<T = any>() {
   return podsInstance.createTransmitterFn<T>()
 }
 

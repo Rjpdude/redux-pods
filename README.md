@@ -110,6 +110,27 @@ const loadUser = async (key: string) => {
 }
 ```
 
+## Synchronize
+
+State resolvers and action handlers can be synchronized into a single action using the `synchronize` function. The resulting state updates are applied to the redux store and UI concurrently as opposed to sequentially.
+
+This is especially useful for events and asynchronous data that result in updates across multiple states. Consider the following asynchronous function which results in an update to two different states:
+
+```ts
+import { synchronize } from 'react-redux'
+
+async function loadUserData() {
+  const data = await api()
+
+  synchronize(() => {
+    userState.setUsername(data.username)
+    gameState.setScore(data.currentScore)
+  })
+}
+```
+
+By synchronizing the two action handler calls, their updated states within the redux store will actualize concurrently.
+
 ## Trackers
 
 States expose a `track` method to track changes made to another state. When a change is detected, tracker callbacks are provided the tracked state's current and previous value, and can draft updates as a result.

@@ -1,4 +1,4 @@
-import { state, onTransmit } from '../exports'
+import { state, transmitter } from '../exports'
 import { generateStore } from '../test-utils'
 
 interface UserData {
@@ -8,7 +8,7 @@ interface UserData {
 
 describe('Data transmit actions', () => {
   it('resolves transmitted data', () => {
-    const transmitUserData = onTransmit<UserData>()
+    const transmitUserData = transmitter<UserData>()
 
     const userState = state({
       username: ''
@@ -32,7 +32,7 @@ describe('Data transmit actions', () => {
   })
 
   it('resolves transmitted data on multiple states and only resolves once', () => {
-    const transmitUserData = onTransmit<UserData>()
+    const transmitUserData = transmitter<UserData>()
 
     const userState = state({
       username: ''
@@ -74,7 +74,7 @@ describe('Data transmit actions', () => {
   })
 
   it('resolves multiple transmitted data calls', () => {
-    const transmitUserData = onTransmit<UserData>()
+    const transmitUserData = transmitter<UserData>()
 
     const userState = state({
       username: ''
@@ -124,8 +124,8 @@ describe('Data transmit actions', () => {
   })
 
   it('works with multiple transmitters', () => {
-    const transmitUserData = onTransmit<UserData>()
-    const transmitScore = onTransmit<number>()
+    const transmitUserData = transmitter<UserData>()
+    const transmitScore = transmitter<number>()
 
     const userState = state({
       username: ''
