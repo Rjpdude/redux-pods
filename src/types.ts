@@ -39,6 +39,17 @@ export type WatcherCallback<S> = (
   prevState?: Readonly<S>
 ) => void
 
+export interface StateHook<S> {
+  (): Readonly<S>
+  <K extends keyof S>(stateKey: K): Readonly<S[K]>
+  <K extends keyof S>(...stateKeys: K[]): Readonly<{
+    [P in K]: S[P]
+  }>
+  <F extends HookMapperFn<S>>(mapperFn: F): ReturnType<F>
+}
+
+export type HookMapperFn<S> = (state: S) => any
+
 export interface StatefulActionSet<S> {
   [key: string]: ActionCreator<S>
 }

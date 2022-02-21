@@ -23,7 +23,7 @@ export class Pods {
     if (this.updatedStates.size === 0) {
       return
     }
-
+    
     for (const state of this.updatedStates) {
       state.triggerWatchers()
     }
@@ -35,7 +35,7 @@ export class Pods {
         fn()
       }
     }
-    
+
     this.updatedStates.clear()
   }
 
@@ -76,11 +76,11 @@ export class Pods {
       dispatch({
         type: ActionTypes.Transmitter,
         transmitterId: id,
-        transmittedData: data,
+        transmittedData: data
       })
     }
     transmitterFn.id = id
-    
+
     return transmitterFn
   }
 
@@ -110,7 +110,7 @@ export class Pods {
 
       // state.setDraftLock(false)
       // const res = action(...args)
-      
+
       // if (this.trackers.has(state)) {
       //   const val = this.trackers.get(state)
 

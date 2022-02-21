@@ -110,36 +110,6 @@ const loadUser = async (key: string) => {
 }
 ```
 
-## Synchronize
-
-A common problem in React applications paired state management tools like Redux and MobX, is batching updates made within asynchronous functions. Consider the following example, a common practice in React applications using Redux:
-
-```ts
-export const loadUser = (key) => async (dispatch) => {
-  const data = await api(key)
-
-  dispatch(setUsername(data.username))
-  dispatch(setScore(data.score))
-}
-```
-
-Because React doesn't automatically batch state updates made within asynchronous callbacks, this code will result in two separate propogation events in your UI. Pods export a `synchronize` function to solve this problem:
-
-```ts
-import { synchronize } from 'redux-pods'
-
-const loadUser = async (key: string) => {
-  const data = await api(key)
-
-  synchronize(() => {
-    userActions.setUsername(data.username)
-    gameActions.setScore(data.score)
-  })
-}
-```
-
-Action handlers called within `synchronize` apply their updated states concurrently, and propogate through the UI in one single update.
-
 ## Trackers
 
 States expose a `track` method to track changes made to another state. When a change is detected, tracker callbacks are provided the tracked state's current and previous value, and can draft updates as a result.
@@ -168,7 +138,19 @@ In many React/Redux applications, reactions to a change in the redux state are g
 
 ## Hooks
 
-State's can be used in React components through their internal `use` hook ([see the example above](#example)). You can also use multiple state values at once with the `usePods` hook:
+State's can be used in React components through their internal `use` hook ([see the example above](#example)). This can be extended to use only a specific property of a state, or to filter the state object by specific properties:
+
+```tsx
+function Component() {
+  const username = userState.use('username')
+
+  /** or **/
+
+  const { username, email } = userState.use('username', 'email')
+}
+```
+
+You can also use multiple state values at once with the `usePods` hook:
 
 ```tsx
 import { usePods } from 'redux-pods'

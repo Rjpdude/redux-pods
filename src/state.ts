@@ -12,10 +12,12 @@ import {
   ActionSet,
   Exposed,
   StateTrackerFn,
-  WatcherCallback
+  WatcherCallback,
+  StateHook,
+  getReact,
 } from './exports'
 
-import { isPrimitive, wrap, unwrap } from './util'
+import { isPrimitive, wrap, unwrap, mapStateValues } from './util'
 
 import { v4 as uuid } from 'uuid'
 import { createDraft, finishDraft, Draft } from 'immer'
@@ -322,8 +324,41 @@ export class State<S = any> {
     }
   }
 
-  use(): Readonly<S> {
-    return usePods(this)
+  use: StateHook<S> = (...args: any[]) => {
+    const React = getReact()
+
+    const resolveStateFromArg = () => {
+      if (args.length === 0) {
+        return this.current
+      }
+      if (args.length === 1) {
+        return typeof args[0] === 'function' ? args[0](this.current) : this.current[args[0] as keyof S]
+      }
+      return Object.entries(this.current)
+        .reduce((obj, [key, val]) => !args.includes(key) ? obj : ({
+          ...obj,
+          [key]: val
+        }), {})
+    }
+
+    const [state, setState] = React.useState(resolveStateFromArg)
+
+    React.useEffect(() => {
+      return podsInstance.createStateTracker([this], () => {
+        setState((cur: any) => {
+          const next = resolveStateFromArg()
+
+          if (Array.isArray(args) && args.length > 1) {
+            /** return current state to bail out of an update when none of the properties have changed */
+            return Object.entries(cur).some(([key, val]) => !Object.is(val, next[key])) ? next : cur
+          }
+
+          return next
+        })
+      })
+    }, [])
+
+    return state
   }
 
   map(storeState: any): S {
