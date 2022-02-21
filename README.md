@@ -102,7 +102,7 @@ const userState = state({
 })
 
 const loadUser = async (key: string) => {
-  const userData = await loadUserData(key)
+  const userData = await api(key)
 
   userState.resolve((draft) => {
     draft.username = userData.username
@@ -112,24 +112,33 @@ const loadUser = async (key: string) => {
 
 ## Synchronize
 
-State resolvers and action handlers can be synchronized into a single action using the `synchronize` function. The resulting state updates are applied to the redux store and UI concurrently as opposed to sequentially.
-
-This is especially useful for events and asynchronous data that result in updates across multiple states. Consider the following asynchronous function which results in an update to two different states:
+A common problem in React applications paired state management tools like Redux and MobX, is batching updates made within asynchronous functions. Consider the following example, a common practice in React applications using Redux:
 
 ```ts
-import { synchronize } from 'react-redux'
+export const loadUser = (key) => async (dispatch) => {
+  const data = await api(key)
 
-async function loadUserData() {
-  const data = await api()
+  dispatch(setUsername(data.username))
+  dispatch(setScore(data.score))
+}
+```
+
+Because React doesn't automatically batch state updates made within asynchronous callbacks, this code will result in two separate propogation events in your UI. Pods export a `synchronize` function to solve this problem:
+
+```ts
+import { synchronize } from 'redux-pods'
+
+const loadUser = async (key: string) => {
+  const data = await api(key)
 
   synchronize(() => {
-    userState.setUsername(data.username)
-    gameState.setScore(data.currentScore)
+    userActions.setUsername(data.username)
+    gameActions.setScore(data.score)
   })
 }
 ```
 
-By synchronizing the two action handler calls, their updated states within the redux store will actualize concurrently.
+Action handlers called within `synchronize` apply their updated states concurrently, and propogate through the UI in one single update.
 
 ## Trackers
 

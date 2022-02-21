@@ -3,6 +3,7 @@ import { State } from './exports'
 import { Reducer } from 'redux'
 
 export enum ActionTypes {
+  ResolveNext = 'pod-action-resolve-next',
   Transmitter = 'pod-action-transmitter',
   ActionHandler = 'pod-action-handler',
   Draft = 'pod-action-draft',
@@ -31,7 +32,7 @@ export type DraftFn<S> = (draft: Draft<S>) => S | void
 export type ActionCreator<S> = (...args: any[]) => S | void
 export type StateTrackerFn<T, S> = (
   podState: Readonly<T>,
-  prevPodState?: Readonly<T>
+  prevPodState: Readonly<T>
 ) => S | void
 export type WatcherCallback<S> = (
   curState: Readonly<S>,
@@ -64,7 +65,9 @@ export type Exposed<S extends State<any>> = Reducer<ExtractStateType<S>> &
     | 'reducer'
     | 'actionsLocked'
     | 'registerWatchFn'
-  >
+  > & {
+    instance: S
+  }
 
 export type InferStates<A> = {
   [K in keyof A]: A[K] extends Exposed<State<infer T>> ? Readonly<T> : unknown

@@ -58,7 +58,7 @@ describe('State tracker functions', () => {
     )
   })
 
-  it.only('tracks multiple state updates', () => {
+  it('tracks multiple state updates', () => {
     const user = state({
       username: '',
       currentScore: -1

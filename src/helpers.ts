@@ -1,6 +1,6 @@
 import { Store } from 'redux'
-import { podsInstance, State, Exposed, InferStates, Transmitter } from './exports'
-import { reactError } from './util'
+import { podsInstance, State, Exposed, InferStates, ExtractStateType } from './exports'
+import { mapStateValues, reactError } from './util'
 
 export function register(store: Store) {
   podsInstance.register(store)
@@ -22,11 +22,12 @@ export function state<S>(initialState: S) {
     }
   })
 
+  boundReducer.instance = stateObj
   return boundReducer
 }
 
-export function transmitter<T = any>() {
-  return podsInstance.createTransmitterFn<T>()
+export function synchronize(fn: () => void) {
+  podsInstance.synchronizeActionHandlers(fn)
 }
 
 export function usePods<A extends any[]>(
@@ -37,11 +38,11 @@ export function usePods<A extends any[]>(
     : any
   : InferStates<A> {
   return args.length === 1
-    ? podStateHook(args[0] as State<any>)
-    : args.map(podStateHook)
+    ? podStateHook([args[0]])[0]
+    : podStateHook(args as Exposed<State<any>>[]) as any
 }
 
-export function podStateHook<S>(state: State<S>): S {
+export function podStateHook<S extends Exposed<State>[]>(states: S): InferStates<S> {
   let react: any
   try {
     react = require('react')
@@ -53,11 +54,13 @@ export function podStateHook<S>(state: State<S>): S {
     reactError()
   }
 
-  const [podState, setPodState] = react.useState(state.current)
+  const [podState, setPodState] = react.useState(
+    mapStateValues(states)
+  )
 
   react.useEffect(() => {
-    return state.watch((curState) => {
-      setPodState(curState)
+    return podsInstance.createStateTracker(states.map(({ instance }) => instance), () => {
+      setPodState(mapStateValues(states))
     })
   }, [])
 

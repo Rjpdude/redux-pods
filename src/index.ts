@@ -1,1 +1,1 @@
-export { register, state, usePods } from './exports'
+export { register, state, synchronize, usePods } from './exports'

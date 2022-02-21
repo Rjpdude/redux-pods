@@ -21,7 +21,7 @@ import { v4 as uuid } from 'uuid'
 import { createDraft, finishDraft, Draft } from 'immer'
 import get from 'lodash.get'
 
-export class State<S> {
+export class State<S = any> {
   /**
    * The state's unique id. Used internally to track action handlers.
    */
@@ -60,6 +60,11 @@ export class State<S> {
   public actionsLocked = false
 
   /**
+   * The next state to apply to the redux store.
+   */
+  private next: Readonly<S>
+  
+  /**
    * The state's current value within the redux store.
    */
   public current: Readonly<S>
@@ -93,48 +98,83 @@ export class State<S> {
       return this.resolveWrappedState(state)
     }
 
-    let res = state
-    try {
-      if (action.type === ActionTypes.Transmitter) {
-        res = this.resolveTransmitterAction(state, action.transmitterId as string, action.transmittedData)
-      } else if (action.stateId === this.id) {
-        res = this.resolveAction(state, action.resolver as ActionResolver<S>)
+    if (action.type === ActionTypes.ResolveNext) {
+      const next = this.next
+
+      if (next !== undefined) {
+        this.next = undefined as any
+        return next
       }
-    } catch (error) {
-      console.error('Error resolving pod state action handler.', error)
-    } finally {
-      this.lock(res)
     }
-    return res
+    return state
+
+    // let res = state
+    // try {
+    //   if (this._draft) {
+    //     res = this.resolveAction(state, () => {
+    //       return finishDraft(this._draft) as S
+    //     })
+    //   } else if (action.stateId === this.id) {
+    //     res = this.resolveAction(state, action.resolver as ActionResolver<S>)
+    //   }
+    // } catch (error) {
+    //   console.error('Error resolving pod state action handler.', error)
+    // } finally {
+    //   this.lock(res)
+    // }
+    // return res
   }
 
-  private resolveTransmitterAction(state: S, id: string, data: any) {
-    if (!this.transmitFnMap || !this.transmitFnMap.has(id)) {
-      return state
-    }
+  public trackers = new Map<State<any>, StateTrackerFn<S, any>>()
+  
+  public resolveNext = (finalize: boolean, resolver: ActionResolver<S>) => {
+    let next = this.current
 
-    return this.resolveAction(state, () => {
-      const fn = this.transmitFnMap.get(id)
-
-      if (typeof fn === 'function') {
-        fn(data, this.draft)
-      }
-    })
-  }
-
-  private resolveAction(state: Readonly<S>, resolver: ActionResolver<S>) {
-    if (typeof resolver !== 'function') {
-      throw new Error('Pod actions must contain a resolver of type function.')
-    }
-
-    this.unlock(state)
+    this.draftLocked = false
 
     const res = resolver()
+
+    this.draftLocked = true
+
     if (res !== undefined && res !== this._draft) {
-      return res as S
+      next = res
+    } else if (this._draft) {
+      next = finishDraft(this._draft) as S
     }
-    return (this._draft ? finishDraft(this._draft) : state) as S
+
+    if (next !== this.current) {
+      this.next = next
+      this.previous = this.current
+      this.current = this.next
+      this._draft = undefined
+
+      for (const [a, b] of this.trackers) {
+        a.resolveNext(false, () => {
+          b(this.next, this.previous)
+        })
+      }
+
+      podsInstance.setUpdatedState(this)
+
+      if (finalize) {
+        podsInstance.next()
+      }
+    }
   }
+  
+  // private resolveAction(state: Readonly<S>, resolver: ActionResolver<S>) {
+  //   if (typeof resolver !== 'function') {
+  //     throw new Error('Pod actions must contain a resolver of type function.')
+  //   }
+
+  //   this.unlock(state)
+
+  //   const res = resolver()
+  //   if (res !== undefined && res !== this._draft) {
+  //     return res as S
+  //   }
+  //   return (this._draft ? finishDraft(this._draft) : state) as S
+  // }
 
   private resolveWrappedState(state: S) {
     const unwrapped = unwrap(state)
@@ -143,24 +183,22 @@ export class State<S> {
     return unwrapped
   }
 
-  private unlock(state: Readonly<S>) {
-    this.draftLocked = false
-    this.previous = state
-  }
+  // private unlock(state: Readonly<S>) {
+  //   this.draftLocked = false
+  //   this.previous = state
+  // }
 
-  private lock(state: Readonly<S>) {
-    this.draftLocked = true
-    this.current = state
-    this._draft = undefined
-  }
+  // private lock(state: Readonly<S>) {
+  //   this.draftLocked = true
+  //   this.current = state
+  //   this._draft = undefined
+  // }
 
-  sideEffects() {
-    if (!Object.is(this.current, this.previous)) {
-      this.triggerWatchers()
-    }
-  }
+  // setDraftLock = (draftLocked: boolean) => {
+  //   this.draftLocked = draftLocked
+  // }
 
-  private triggerWatchers() {
+  public triggerWatchers = () => {
     if (this.watchers) {
       for (const watcherFn of this.watchers) {
         try {
@@ -173,24 +211,28 @@ export class State<S> {
   }
 
   get draft() {
+    const currentState = this.next === undefined ? this.current : this.next
+
     if (this.draftLocked) {
       throw new Error(
         'State drafts can only be accessed within action creator or resolver functions.'
       )
     }
-    if (isPrimitive(this.current)) {
+
+    if (isPrimitive(currentState)) {
       throw new Error(
         `Primitive state values cannot be drafted - consider using 'current' instead.`
       )
     }
-    return this._draft || (this._draft = createDraft(this.current))
+
+    return this._draft || (this._draft = createDraft(currentState))
   }
 
   action<A extends ActionCreator<S>>(actionHandler: A): (...args: Parameters<A>) => void {
     return podsInstance.createActionHandler(actionHandler, this)
   }
 
-  on = <T>(transmitter: Transmitter<T>, fn: TransmitReolver<T, S>) => {
+  on<T>(transmitter: Transmitter<T>, fn: TransmitReolver<T, S>) {
     if (!this.transmitFnMap) {
       this.transmitFnMap = new Map()
     }
@@ -216,25 +258,44 @@ export class State<S> {
     if (!(trackedState instanceof State) || (trackedState as any) === this) {
       throw new Error('Trackers must reference a different state object.')
     }
-    podsInstance.createStateTracker(trackerFn, this, trackedState)
+    if (trackedState.trackers.has(this)) {
+      throw new Error('A tracker has already been created for this state.')
+    }
+    trackedState.trackers.set(this, trackerFn)
+
+    //podsInstance.createStateTracker(trackerFn, this, trackedState)
   }
 
   resolve(draftFn: DraftFn<S>) {
-    podsInstance.resolve(draftFn, this, ActionTypes.Draft, () => {
-      return isPrimitive(this.current) ? (this.current as any) : this.draft
+    this.resolveNext(true, () => {
+      draftFn(isPrimitive(this.current) ? (this.current as any) : this.draft)
     })
+    // podsInstance.resolve(draftFn, this, ActionTypes.Draft, () => {
+    //   return isPrimitive(this.current) ? (this.current as any) : this.draft
+    // })
   }
 
-  watch(callback: WatcherCallback<S>) {
-    return this.registerWatchFn((...args) => {
+  watch = (callback: WatcherCallback<S>) => {
+    return podsInstance.createStateTracker([this], () => {
       this.actionsLocked = true
 
       try {
-        callback(...args)
+        callback(this.current, this.previous)
+      } catch (error) {
+        console.error('Error resolving watcher callback function.', error)
       } finally {
         this.actionsLocked = false
       }
     })
+    // return this.registerWatchFn((...args) => {
+    //   this.actionsLocked = true
+
+    //   try {
+    //     callback(...args)
+    //   } finally {
+    //     this.actionsLocked = false
+    //   }
+    // })
   }
 
   registerWatchFn(callback: WatcherCallback<S>) {

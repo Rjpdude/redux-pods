@@ -1,4 +1,4 @@
-import { state } from '..'
+import { state, podsInstance } from '../exports'
 import { generateStore } from '../test-utils'
 
 describe('State tests', () => {

@@ -1,4 +1,4 @@
-import { State } from './exports'
+import { State, Exposed } from './exports'
 
 export function isPrimitive(val: any) {
   return [
@@ -17,6 +17,10 @@ export function wrap<T>(val: T): T {
 
 export function unwrap<T>(val: T): T {
   return (val instanceof Object ? (val as Object).valueOf() : val) as T
+}
+
+export function mapStateValues(states: State[] | Exposed<State>[]) {
+  return states.map(({ current }) => current)
 }
 
 export function resolveStatePaths(
