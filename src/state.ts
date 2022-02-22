@@ -1,6 +1,5 @@
 import {
   podsInstance,
-  usePods,
   ActionTypes,
   ActionResolver,
   InternalActionType,
@@ -17,7 +16,7 @@ import {
   getReact
 } from './exports'
 
-import { isPrimitive, wrap, unwrap, mapStateValues } from './util'
+import { isPrimitive, wrap, unwrap } from './util'
 
 import { v4 as uuid } from 'uuid'
 import { createDraft, finishDraft, Draft } from 'immer'
@@ -76,12 +75,6 @@ export class State<S = any> {
    */
   public previous: Readonly<S>
 
-  /**
-   * A set of state watcher callback functions, which may or may not have access to modify the draft.
-   * Called outside of the reducer after a change has been detected in the state value.
-   */
-  private watchers: Set<WatcherCallback<S>>
-
   constructor(initialState: S) {
     if (initialState === null || initialState === undefined) {
       throw new Error(
@@ -109,27 +102,11 @@ export class State<S = any> {
       }
     }
     return state
-
-    // let res = state
-    // try {
-    //   if (this._draft) {
-    //     res = this.resolveAction(state, () => {
-    //       return finishDraft(this._draft) as S
-    //     })
-    //   } else if (action.stateId === this.id) {
-    //     res = this.resolveAction(state, action.resolver as ActionResolver<S>)
-    //   }
-    // } catch (error) {
-    //   console.error('Error resolving pod state action handler.', error)
-    // } finally {
-    //   this.lock(res)
-    // }
-    // return res
   }
 
   public trackers = new Map<State<any>, StateTrackerFn<S, any>>()
 
-  public resolveNext = (finalize: boolean, resolver: ActionResolver<S>) => {
+  resolveNext = (finalize: boolean, resolver: ActionResolver<S>) => {
     let next = this.current
 
     this.draftLocked = false
@@ -164,52 +141,11 @@ export class State<S = any> {
     }
   }
 
-  // private resolveAction(state: Readonly<S>, resolver: ActionResolver<S>) {
-  //   if (typeof resolver !== 'function') {
-  //     throw new Error('Pod actions must contain a resolver of type function.')
-  //   }
-
-  //   this.unlock(state)
-
-  //   const res = resolver()
-  //   if (res !== undefined && res !== this._draft) {
-  //     return res as S
-  //   }
-  //   return (this._draft ? finishDraft(this._draft) : state) as S
-  // }
-
   private resolveWrappedState(state: S) {
     const unwrapped = unwrap(state)
     this.initialState = unwrapped
     this.current = unwrapped
     return unwrapped
-  }
-
-  // private unlock(state: Readonly<S>) {
-  //   this.draftLocked = false
-  //   this.previous = state
-  // }
-
-  // private lock(state: Readonly<S>) {
-  //   this.draftLocked = true
-  //   this.current = state
-  //   this._draft = undefined
-  // }
-
-  // setDraftLock = (draftLocked: boolean) => {
-  //   this.draftLocked = draftLocked
-  // }
-
-  public triggerWatchers = () => {
-    if (this.watchers) {
-      for (const watcherFn of this.watchers) {
-        try {
-          watcherFn(this.current, this.previous)
-        } catch (error) {
-          console.error('Error resolving watcher callback function.', error)
-        }
-      }
-    }
   }
 
   get draft() {
@@ -266,17 +202,12 @@ export class State<S = any> {
       throw new Error('A tracker has already been created for this state.')
     }
     trackedState.trackers.set(this, trackerFn)
-
-    //podsInstance.createStateTracker(trackerFn, this, trackedState)
   }
 
   resolve(draftFn: DraftFn<S>) {
     this.resolveNext(true, () => {
       draftFn(isPrimitive(this.current) ? (this.current as any) : this.draft)
     })
-    // podsInstance.resolve(draftFn, this, ActionTypes.Draft, () => {
-    //   return isPrimitive(this.current) ? (this.current as any) : this.draft
-    // })
   }
 
   watch = (callback: WatcherCallback<S>) => {
@@ -291,39 +222,6 @@ export class State<S = any> {
         this.actionsLocked = false
       }
     })
-    // return this.registerWatchFn((...args) => {
-    //   this.actionsLocked = true
-
-    //   try {
-    //     callback(...args)
-    //   } finally {
-    //     this.actionsLocked = false
-    //   }
-    // })
-  }
-
-  registerWatchFn(callback: WatcherCallback<S>) {
-    if (typeof callback !== 'function') {
-      throw new Error(
-        `Unable to register state watcher callback of type ${typeof callback}.`
-      )
-    }
-
-    if (!this.watchers) {
-      this.watchers = new Set()
-    }
-
-    if (this.watchers.has(callback)) {
-      throw new Error(
-        'Unable to register state watcher callback - already registered.'
-      )
-    }
-
-    this.watchers.add(callback)
-
-    return () => {
-      this.watchers.delete(callback)
-    }
   }
 
   use: StateHook<S> = (...args: any[]) => {
