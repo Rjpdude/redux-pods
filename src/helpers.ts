@@ -1,15 +1,26 @@
 import { Store } from 'redux'
 import {
   podsInstance,
+  StateTree,
   State,
   Exposed,
   InferStates,
-  ExtractStateType
+  BranchMapObject
 } from './exports'
 import { mapStateValues, reactError } from './util'
 
 export function register(store: Store) {
-  podsInstance.register(store)
+  podsInstance.registerReduxStore(store)
+}
+
+export function tree<T>(tree: T) {
+  const stateTree = new StateTree(tree)
+  podsInstance.registerStateTree(stateTree)
+  return stateTree
+}
+
+export function branch<B>(branch: BranchMapObject<B>): B {
+  return branch as any
 }
 
 export function state<S>(initialState: S) {

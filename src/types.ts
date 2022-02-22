@@ -2,6 +2,10 @@ import { Draft } from 'immer'
 import { State } from './exports'
 import { Reducer } from 'redux'
 
+export type BranchMapObject<T = any> = {
+  [K in keyof T]: Exposed<State<T[K]>>
+}
+
 export enum ActionTypes {
   ResolveNext = 'pod-action-resolve-next',
   ActionHandler = 'pod-action-handler',
@@ -10,7 +14,7 @@ export enum ActionTypes {
   ResolvePrimitives = 'pod-action-resolve-primitives'
 }
 
-export interface InternalActionType<S> {
+export interface InternalActionType<S = any> {
   type: ActionTypes
   stateId?: string
   actionKey?: string

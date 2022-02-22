@@ -3,7 +3,7 @@ import { podsInstance } from '../exports'
 
 export function generateStore(reducers: ReducersMapObject) {
   const store = createStore(combineReducers(reducers))
-  podsInstance.register(store)
+  podsInstance.registerReduxStore(store)
   return store
 }
 

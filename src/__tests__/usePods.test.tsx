@@ -20,9 +20,7 @@ describe('usePods and State use react hook', () => {
       return <div>{userState.username}</div>
     }
 
-    const output = mount(
-      <Component />
-    )
+    const output = mount(<Component />)
 
     expect(output.find(Component).text()).toBe('ryan')
   })
@@ -44,9 +42,7 @@ describe('usePods and State use react hook', () => {
       return <div>{userState.username}</div>
     }
 
-    const output = mount(
-      <Component />
-    )
+    const output = mount(<Component />)
 
     expect(output.find(Component).text()).toBe('ryan')
 
@@ -131,9 +127,7 @@ describe('usePods and State use react hook', () => {
       )
     }
 
-    const output = mount(
-      <Component />
-    )
+    const output = mount(<Component />)
 
     expect(output.find('#username').text()).toBe('ryan')
     expect(output.find('#score').text()).toBe('10')
@@ -192,7 +186,11 @@ describe('usePods and State use react hook', () => {
       setScore(100)
     })
 
-    expect(spy1).toHaveBeenNthCalledWith(2, { username: 'jeremy' }, { score: 100 })
+    expect(spy1).toHaveBeenNthCalledWith(
+      2,
+      { username: 'jeremy' },
+      { score: 100 }
+    )
     expect(spy2).toHaveBeenNthCalledWith(2, 'jeremy', 100)
 
     expect(spy1).toHaveBeenCalledTimes(2)
