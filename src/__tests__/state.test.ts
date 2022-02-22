@@ -25,7 +25,7 @@ describe('State tests', () => {
       game
     })
 
-    game.watch(() => {
+    game.observe(() => {
       game.draft.count = 50
     })
 
@@ -58,7 +58,7 @@ describe('State tests', () => {
       game
     })
 
-    game.watch(() => {
+    game.observe(() => {
       gameActions.setCount(2000)
     })
 
@@ -94,8 +94,8 @@ describe('State tests', () => {
     const watcherFn1 = jest.fn()
     const watcherFn2 = jest.fn()
 
-    game.watch(watcherFn1)
-    game.watch(watcherFn2)
+    game.observe(watcherFn1)
+    game.observe(watcherFn2)
 
     gameActions.setCount(10)
     expect(store.getState().game.count).toBe(10)
@@ -126,7 +126,7 @@ describe('State tests', () => {
     })
 
     const watcherFn = jest.fn()
-    const unregister = game.watch(watcherFn)
+    const unregister = game.observe(watcherFn)
 
     gameActions.setCount(10)
     expect(store.getState().game.count).toBe(10)
@@ -156,7 +156,7 @@ describe('State tests', () => {
 
     const watcherFn = jest.fn()
 
-    game.watch(watcherFn)
+    game.observe(watcherFn)
 
     gameActions.setCount(10)
     expect(store.getState().game.count).toBe(10)

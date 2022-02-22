@@ -22,6 +22,16 @@ export interface InternalActionType<S = any> {
   resolver?: ActionResolver<S>
 }
 
+export interface Observer {
+  type: ObserverType
+  fn(): void
+}
+
+export enum ObserverType {
+  Concurrent,
+  Consecutive
+}
+
 export type ActionResolver<S> = () => S | void
 export type DraftFn<S> = (draft: Draft<S>) => S | void
 export type ActionCreator<S> = (...args: any[]) => S | void
@@ -29,10 +39,10 @@ export type StateTrackerFn<T, S> = (
   podState: Readonly<T>,
   prevPodState: Readonly<T>
 ) => S | void
-export type WatcherCallback<S> = (
+export type WatcherCallback<S, R = any> = (
   curState: Readonly<S>,
   prevState?: Readonly<S>
-) => void
+) => R
 
 export interface StateHook<S> {
   (): Readonly<S>

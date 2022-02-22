@@ -20,11 +20,11 @@ describe('Custom hook functions', () => {
       const [score, setScore] = React.useState(game.current.score)
 
       React.useEffect(() => {
-        const unregisterUser = player.watch(({ username }) => {
+        const unregisterUser = player.observe(({ username }) => {
           setUsername(username)
         })
 
-        const unregisterGame = game.watch(({ score }) => {
+        const unregisterGame = game.observe(({ score }) => {
           setScore(score)
         })
 
@@ -131,7 +131,7 @@ describe('Custom hook functions', () => {
       const [username, setUsername] = React.useState(player.current.username)
 
       React.useEffect(() => {
-        return player.watch(({ username }) => {
+        return player.observe(({ username }) => {
           fn(username)
           setUsername(username)
         })

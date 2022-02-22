@@ -81,7 +81,7 @@ State changes can be effected within action callbacks through the state's `draft
 
 You can also access the state's `current` property - the actual current state object. This is useful for maintining an awareness of the current state to compare against pending changes on the draft.
 
-## Action handlers
+## actionSet
 
 Action handlers can be generated individually through a state's `action` method, or in a set through a state's `actionSet` method. Below is an example of an action set for [gameState](#example):
 
@@ -97,7 +97,7 @@ const gameActions = gameState.actionSet({
 })
 ```
 
-## Resolve
+## resolve
 
 States expose a `resolve` method, allowing dynamic state updates from anywhere in your application. For example, resolvers can be used to effect changes to a state within asynchronous functions.
 
@@ -115,7 +115,7 @@ const loadUser = async (key: string) => {
 }
 ```
 
-## Trackers
+## track
 
 States expose a `track` method to track changes made to another state. When a change is detected, tracker callbacks are provided the tracked state's current and previous value, and can draft updates as a result.
 
@@ -135,11 +135,23 @@ userState.track(gameState, ({ score }) => {
 
 # State observance
 
-**Changes to pod states can be observed through React hooks, watchers and custom React hooks.**
+## Observe
 
-Pod states provide internal observance methods which can serve as an alternative to traditional patterns like the `mapStateToProps` and prop comparisons within `componentDidUpdate`.
+**Pod State's expose `observe` to track changes to their state.**
 
-In many React/Redux applications, reactions to a change in the redux state are generally placed within components. This practice places unnecessary strain on the UI, and also obfuscates separation of concerns.
+An state observer can be established at any level of your application. The provided callback will resolve with the state's current and previous value. Observers can be used to enact any kind of side effect - however, they **cannot** be used to directly nor indirectly update their own state.
+
+Consider an API call that needs to be made everytime the game state `score` property changes.
+
+```ts
+game.observe((state, prevState) => {
+  if (state.score !== prevState.score) {
+    syncGameScore(state.score)
+  }
+})
+```
+
+Observers are used and established for all internal observance methods. For example, [state trackers](#track) internally create an observer on the tracked state.
 
 ## Hooks
 
@@ -167,20 +179,6 @@ function Component() {
     <span>{user.username} {game.score}</span>
   )
 }
-```
-
-## Watch
-
-Changes to a state can be observed and acted upon using their internal `watch` method. When a change in state is detected, watcher callbacks are resolved with the state's current and previous value. An `unregister` function is returned as a response to unregister the watcher as necessary.
-
-Consider an API call that needs to be made everytime the game state's `score` property changes.
-
-```ts
-gameState.watch((state, prevState) => {
-  if (state.score !== prevState.score) {
-    syncGameScore(state.score)
-  }
-})
 ```
 
 ## Custom hooks

@@ -1,5 +1,5 @@
 import { Store } from 'redux'
-import { StateTree, State, ActionTypes, ActionCreator } from './exports'
+import { StateTree, State, ActionTypes, ActionCreator, Observer, ObserverType } from './exports'
 import { resolveStatePaths } from './util'
 
 export class Pods {
@@ -7,7 +7,7 @@ export class Pods {
   private stateTree: StateTree
   private states = new Set<State>()
   private updatedStates = new Set<State>()
-  private stateTrackers = new Map<State[], () => void>()
+  private stateTrackers = new Map<State[], Observer>()
 
   registerStateTree(stateTree: StateTree) {
     if (this.store) {
@@ -35,15 +35,27 @@ export class Pods {
       return
     }
 
-    for (const [trackedStates, fn] of this.stateTrackers) {
-      const updated = trackedStates.some((s) => this.updatedStates.has(s))
-
-      if (updated) {
-        fn()
+    for (const [trackedStates, observer] of this.stateTrackers) {
+      if (observer.type === ObserverType.Consecutive) {
+        const updated = trackedStates.some((s) => this.updatedStates.has(s))
+  
+        if (updated) {
+          observer.fn()
+        }
       }
     }
 
     this.updatedStates.clear()
+  }
+
+  resolveConcurrentObservers(state: State) {
+    for (const [trackedStates, observer] of this.stateTrackers) {
+      if (observer.type === ObserverType.Concurrent) {
+        if (trackedStates.includes(state)) {
+          observer.fn()
+        }
+      }
+    }
   }
 
   setStatePaths(storeState: any) {
@@ -60,8 +72,11 @@ export class Pods {
     }
   }
 
-  createStateTracker(states: State[], fn: () => void) {
-    this.stateTrackers.set(states, fn)
+  createStateTracker(states: State[], fn: () => void, type = ObserverType.Consecutive) {
+    this.stateTrackers.set(states, {
+      type,
+      fn
+    })
 
     return () => {
       this.stateTrackers.delete(states)

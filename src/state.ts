@@ -11,7 +11,8 @@ import {
   StateTrackerFn,
   WatcherCallback,
   StateHook,
-  getReact
+  getReact,
+  ObserverType,
 } from './exports'
 
 import { isPrimitive, wrap, unwrap } from './util'
@@ -52,6 +53,11 @@ export class State<S = any> {
    * prevents race conditions.
    */
   public actionsLocked = false
+
+  /**
+   * A map of other States and a tracker function callback that's called after state resolution.
+   */
+  private trackers = new Map<State<any>, StateTrackerFn<S, any>>()
 
   /**
    * The next state to apply to the redux store.
@@ -97,8 +103,6 @@ export class State<S = any> {
     return state
   }
 
-  public trackers = new Map<State<any>, StateTrackerFn<S, any>>()
-
   resolveNext = (finalize: boolean, resolver: ActionResolver<S>) => {
     let next = this.current
 
@@ -120,13 +124,14 @@ export class State<S = any> {
       this.current = this.next
       this._draft = undefined
 
-      for (const [a, b] of this.trackers) {
-        a.resolveNext(false, () => {
-          b(this.next, this.previous)
-        })
-      }
+      // for (const [a, b] of this.trackers) {
+      //   a.resolveNext(false, () => {
+      //     b(this.next, this.previous)
+      //   })
+      // }
 
       podsInstance.setUpdatedState(this)
+      podsInstance.resolveConcurrentObservers(this)
 
       if (finalize) {
         podsInstance.next()
@@ -175,14 +180,19 @@ export class State<S = any> {
     ) as ActionSet<O>
   }
 
-  track<P>(trackedState: Exposed<State<P>>, trackerFn: StateTrackerFn<P, S>) {
+  track<P>(trackedState: Exposed<State<P>>, trackerFn: WatcherCallback<P, S | void>) {
     if (!(trackedState instanceof State) || (trackedState as any) === this) {
       throw new Error('Trackers must reference a different state object.')
     }
-    if (trackedState.trackers.has(this)) {
-      throw new Error('A tracker has already been created for this state.')
-    }
-    trackedState.trackers.set(this, trackerFn)
+    trackedState.observe((prev, cur) => {
+      this.resolve(() => {
+        trackerFn(prev, cur)
+      })
+    }, true)
+    // if (trackedState.trackers.has(this)) {
+    //   throw new Error('A tracker has already been created for this state.')
+    // }
+    // trackedState.trackers.set(this, trackerFn)
   }
 
   resolve(draftFn: DraftFn<S>) {
@@ -191,7 +201,7 @@ export class State<S = any> {
     })
   }
 
-  watch = (callback: WatcherCallback<S>) => {
+  observe = (callback: WatcherCallback<S>, concurrent = false) => {
     return podsInstance.createStateTracker([this], () => {
       this.actionsLocked = true
 
@@ -202,7 +212,7 @@ export class State<S = any> {
       } finally {
         this.actionsLocked = false
       }
-    })
+    }, concurrent ? ObserverType.Concurrent : ObserverType.Consecutive)
   }
 
   use: StateHook<S> = (...args: any[]) => {
