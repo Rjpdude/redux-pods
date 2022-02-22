@@ -23,7 +23,7 @@ export class Pods {
     if (this.updatedStates.size === 0) {
       return
     }
-    
+
     for (const state of this.updatedStates) {
       state.triggerWatchers()
     }

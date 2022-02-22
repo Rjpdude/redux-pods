@@ -14,7 +14,7 @@ import {
   StateTrackerFn,
   WatcherCallback,
   StateHook,
-  getReact,
+  getReact
 } from './exports'
 
 import { isPrimitive, wrap, unwrap, mapStateValues } from './util'
@@ -65,7 +65,7 @@ export class State<S = any> {
    * The next state to apply to the redux store.
    */
   private next: Readonly<S>
-  
+
   /**
    * The state's current value within the redux store.
    */
@@ -128,7 +128,7 @@ export class State<S = any> {
   }
 
   public trackers = new Map<State<any>, StateTrackerFn<S, any>>()
-  
+
   public resolveNext = (finalize: boolean, resolver: ActionResolver<S>) => {
     let next = this.current
 
@@ -163,7 +163,7 @@ export class State<S = any> {
       }
     }
   }
-  
+
   // private resolveAction(state: Readonly<S>, resolver: ActionResolver<S>) {
   //   if (typeof resolver !== 'function') {
   //     throw new Error('Pod actions must contain a resolver of type function.')
@@ -230,7 +230,9 @@ export class State<S = any> {
     return this._draft || (this._draft = createDraft(currentState))
   }
 
-  action<A extends ActionCreator<S>>(actionHandler: A): (...args: Parameters<A>) => void {
+  action<A extends ActionCreator<S>>(
+    actionHandler: A
+  ): (...args: Parameters<A>) => void {
     return podsInstance.createActionHandler(actionHandler, this)
   }
 
@@ -332,13 +334,18 @@ export class State<S = any> {
         return this.current
       }
       if (args.length === 1) {
-        return typeof args[0] === 'function' ? args[0](this.current) : this.current[args[0] as keyof S]
+        return this.current[args[0] as keyof S]
       }
-      return Object.entries(this.current)
-        .reduce((obj, [key, val]) => !args.includes(key) ? obj : ({
-          ...obj,
-          [key]: val
-        }), {})
+      return Object.entries(this.current).reduce(
+        (obj, [key, val]) =>
+          !args.includes(key)
+            ? obj
+            : {
+                ...obj,
+                [key]: val
+              },
+        {}
+      )
     }
 
     const [state, setState] = React.useState(resolveStateFromArg)
@@ -346,11 +353,15 @@ export class State<S = any> {
     React.useEffect(() => {
       return podsInstance.createStateTracker([this], () => {
         setState((cur: any) => {
-          const next = resolveStateFromArg()
+          const next = resolveStateFromArg() as S
 
-          if (Array.isArray(args) && args.length > 1) {
+          if (args.length > 1) {
             /** return current state to bail out of an update when none of the properties have changed */
-            return Object.entries(cur).some(([key, val]) => !Object.is(val, next[key])) ? next : cur
+            return Object.entries(cur as S).some(
+              ([key, val]) => !Object.is(val, next[key as keyof S])
+            )
+              ? next
+              : cur
           }
 
           return next

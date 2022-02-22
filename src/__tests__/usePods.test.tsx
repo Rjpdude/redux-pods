@@ -3,7 +3,6 @@ import { act } from 'react-dom/test-utils'
 import { state, synchronize, usePods } from '..'
 import { generateStore, asyncFn } from '../test-utils'
 import { mount } from 'enzyme'
-import { Provider } from 'react-redux'
 
 describe('usePods and State use react hook', () => {
   it('provides state obj', () => {
@@ -22,9 +21,7 @@ describe('usePods and State use react hook', () => {
     }
 
     const output = mount(
-      <Provider store={store}>
-        <Component />
-      </Provider>
+      <Component />
     )
 
     expect(output.find(Component).text()).toBe('ryan')
@@ -48,9 +45,7 @@ describe('usePods and State use react hook', () => {
     }
 
     const output = mount(
-      <Provider store={store}>
-        <Component />
-      </Provider>
+      <Component />
     )
 
     expect(output.find(Component).text()).toBe('ryan')
@@ -63,7 +58,7 @@ describe('usePods and State use react hook', () => {
   })
 
   it('provides multiple state properties', () => {
-    const player = state({ 
+    const player = state({
       id: 1,
       username: 'ryan',
       data: {
@@ -87,11 +82,12 @@ describe('usePods and State use react hook', () => {
       return <div />
     }
 
-    const output = mount(
-      <Component />
-    )
+    const output = mount(<Component />)
 
-    expect(spy).toHaveBeenCalledWith({ username: 'ryan', data: { loggedIn: false }})
+    expect(spy).toHaveBeenCalledWith({
+      username: 'ryan',
+      data: { loggedIn: false }
+    })
 
     act(() => {
       player.resolve((draft) => {
@@ -99,7 +95,10 @@ describe('usePods and State use react hook', () => {
       })
     })
 
-    expect(spy).toHaveBeenCalledWith({ username: 'john', data: { loggedIn: false }})
+    expect(spy).toHaveBeenCalledWith({
+      username: 'john',
+      data: { loggedIn: false }
+    })
     expect(spy).toHaveBeenCalledTimes(2)
 
     act(() => {
@@ -133,16 +132,14 @@ describe('usePods and State use react hook', () => {
     }
 
     const output = mount(
-      <Provider store={store}>
-        <Component />
-      </Provider>
+      <Component />
     )
 
     expect(output.find('#username').text()).toBe('ryan')
     expect(output.find('#score').text()).toBe('10')
   })
 
-  it('updated multiple states', async () => {
+  it('updated multiple states across multiple components', async () => {
     const player = state({ username: 'ryan' })
     const game = state({ score: 10 })
 
@@ -156,60 +153,49 @@ describe('usePods and State use react hook', () => {
 
     const store = generateStore({ player, game })
 
+    const spy1 = jest.fn()
+    const spy2 = jest.fn()
+
     const Component = () => {
       const [playerData, gameData] = usePods(player, game)
 
       React.useEffect(() => {
-        console.log('effect 1', playerData.username, gameData.score)
+        spy1(playerData, gameData)
       }, [playerData, gameData])
 
-      return (
-        <>
-          <div id="username">{playerData.username}</div>
-          <div id="score">{gameData.score}</div>
-        </>
-      )
+      return <div />
     }
 
     const Component2 = () => {
-      const playerData = player.use()
-      const gameData = game.use()
+      const username = player.use('username')
+      const score = game.use('score')
 
       React.useEffect(() => {
-        console.log('effect 2', playerData.username, gameData.score)
-      }, [playerData, gameData])
+        spy2(username, score)
+      }, [username, score])
 
-      return <div>{gameData.score}</div>
+      return <div />
     }
 
     const output = mount(
-      <Provider store={store}>
+      <>
         <Component />
         <Component2 />
-      </Provider>
+      </>
     )
 
-    // expect(output.find('#username').text()).toBe('ryan')
-    // expect(output.find('#score').text()).toBe('10')
+    expect(spy1).toHaveBeenNthCalledWith(1, { username: 'ryan' }, { score: 10 })
+    expect(spy2).toHaveBeenNthCalledWith(1, 'ryan', 10)
 
     act(() => {
       setUsername('jeremy')
       setScore(100)
     })
 
-    // await act(async () => {
-    //   // setUsername('jeremy')
-    //   // setScore(100)
+    expect(spy1).toHaveBeenNthCalledWith(2, { username: 'jeremy' }, { score: 100 })
+    expect(spy2).toHaveBeenNthCalledWith(2, 'jeremy', 100)
 
-    //   await asyncFn(null)
-
-    //   //synchronize(() => {
-    //     setUsername('john')
-    //     setScore(200)
-    //   //})
-    // })
-
-    // expect(output.find('#username').text()).toBe('john')
-    // expect(output.find('#score').text()).toBe('200')
+    expect(spy1).toHaveBeenCalledTimes(2)
+    expect(spy2).toHaveBeenCalledTimes(2)
   })
 })
