@@ -4,7 +4,6 @@ import { Reducer } from 'redux'
 
 export enum ActionTypes {
   ResolveNext = 'pod-action-resolve-next',
-  Transmitter = 'pod-action-transmitter',
   ActionHandler = 'pod-action-handler',
   Draft = 'pod-action-draft',
   StateTracker = 'pod-action-state-tracker',
@@ -14,18 +13,9 @@ export enum ActionTypes {
 export interface InternalActionType<S> {
   type: ActionTypes
   stateId?: string
-  transmitterId?: string
-  transmittedData?: any
   actionKey?: string
   resolver?: ActionResolver<S>
 }
-
-export interface Transmitter<T> {
-  (data: T): void
-  id: Readonly<string>
-}
-
-export type TransmitReolver<T, S> = (data: T, draft: Draft<S>) => S | void
 
 export type ActionResolver<S> = () => S | void
 export type DraftFn<S> = (draft: Draft<S>) => S | void

@@ -1,5 +1,5 @@
 import { Store } from 'redux'
-import { State, ActionTypes, ActionCreator, Transmitter } from './exports'
+import { State, ActionTypes, ActionCreator } from './exports'
 import { resolveStatePaths } from './util'
 
 export class Pods {

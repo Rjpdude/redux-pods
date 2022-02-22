@@ -3,8 +3,6 @@ import {
   ActionTypes,
   ActionResolver,
   InternalActionType,
-  Transmitter,
-  TransmitReolver,
   DraftFn,
   StatefulActionSet,
   ActionCreator,
@@ -42,11 +40,6 @@ export class State<S = any> {
    * The drafted state value, set when a state resolver function accesses the `draft` member.
    */
   private _draft: Draft<S> | undefined
-
-  /**
-   * A map of callbacks to resolve incoming data transmittance.
-   */
-  private transmitFnMap: Map<string, TransmitReolver<any, S>>
 
   /**
    * The state's lock status. When true, it prevents a state draft from being created.
@@ -170,18 +163,6 @@ export class State<S = any> {
     actionHandler: A
   ): (...args: Parameters<A>) => void {
     return podsInstance.createActionHandler(actionHandler, this)
-  }
-
-  on<T>(transmitter: Transmitter<T>, fn: TransmitReolver<T, S>) {
-    if (!this.transmitFnMap) {
-      this.transmitFnMap = new Map()
-    }
-
-    if (this.transmitFnMap.has(transmitter.id)) {
-      throw new Error('This state already has a resolver for this transmitter.')
-    }
-
-    this.transmitFnMap.set(transmitter.id, fn)
   }
 
   actionSet<O extends StatefulActionSet<S>>(obj: O): ActionSet<O> {
