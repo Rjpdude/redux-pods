@@ -139,7 +139,7 @@ userState.track(gameState, ({ score }) => {
 
 **Pod State's expose `observe` to track changes to their state.**
 
-An state observer can be established at any level of your application. The provided callback will resolve with the state's current and previous value. Observers can be used to enact any kind of side effect - however, they **cannot** be used to directly nor indirectly update their own state.
+A state observer can be established at any level of your application. The provided callback will resolve with the state's current and previous value. Observers can be used to enact any kind of side effect - however, they **cannot** be used to directly nor indirectly update their own state.
 
 Consider an API call that needs to be made everytime the game state `score` property changes.
 
@@ -155,15 +155,43 @@ Observers are used and established for all internal observance methods. For exam
 
 ## Hooks
 
-State's can be used in React components through their internal `use` hook ([see the example above](#example)). This can be extended to use only a specific property of a state, or to filter the state object by specific properties:
+**Redux Pods comes pre-bundled with hook functions that can be used out of the box in React components.**
+
+States expose an internal `use` hook that can provide the state directly, an individual property of the state object or a subset of a state object. You can also import the `usePods` hook to provide a set of multiple state objects.
+
+### Example 1
 
 ```tsx
 function Component() {
-  const username = userState.use('username')
+  const userState = user.use()
 
-  /** or **/
+  return (
+    <p>Welcome, {userState.username}!</p>
+  )
+}
+```
 
-  const { username, email } = userState.use('username', 'email')
+### Example 2
+
+```tsx
+function Component() {
+  const username = user.use('username')
+
+  return (
+    <p>Welcome, {username}!</p>
+  )
+}
+```
+
+### Example 3
+
+```tsx
+function Component() {
+  const { id, username } = user.use('id', 'username')
+
+  return (
+    <a href={`/profile/${id}`}>{username}</a>
+  )
 }
 ```
 
