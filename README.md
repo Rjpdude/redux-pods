@@ -2,6 +2,8 @@
 
 **An integrated framework for the management and composition of Redux state.**
 
+Redux Pods is a powerful state management API that can be integrated with or without Redux. While designed with specific implementations for React and Redux, Pods can be used to manage state within any node based application.
+
 # Example
 
 The following example creates a simple state object with a `score` property, along with an action handler to add points to the score.
@@ -9,28 +11,26 @@ The following example creates a simple state object with a `score` property, alo
 ```ts
 import { state } from 'redux-pods'
 
-const gameState = state({ 
+const game = state({ 
   score: 0
 })
 
-const addToScore = gameState.action(
-  (points: number) => {
-    gameState.draft.score += points
-  }
-)
+const add = game.action((points) => {
+  game.draft.score += points
+})
 ```
 
 The following is a simple React counter component that displays the score and a button to increment it.
 
 ```tsx
 function Counter() {
-  const { score } = gameState.use()
+  const { score } = game.use()
 
   return (
     <div>
       <p>Score: {score}</p>
 
-      <button onClick={() => addToScore(1)}>
+      <button onClick={() => add(1)}>
         Click me
       </button>
     </div>
@@ -40,18 +40,23 @@ function Counter() {
 
 # Setup
 
-Pod states can be included in your store exactly like traditional reducer functions. *It's that easy!*
+At it's core, Redux Pods is a lightweight and versatile state management API that can be used in any node.js application. **No setup is required by default** - states and their corresponding actions can be observed and called from anywhere in your application.
 
-To initialize the package, simply import and call `register` with your store object after it's been created. This is an example of a simple redux store which includes [gameState](#example) from the example above:
+Pod States can be observed using [React Hooks](#hooks) right out of the box, with or without Redux.
+
+## Redux
+
+State objects are actually enhanced reducer functions. As such, they can be included directly in your Redux store alongside and in exactly the same way as traditional reducer functions.
+
+To allow Pod States to function within your Redux store, simply call `register` after your store has been created. The following is an example of a simple redux store using the [game](#example) state from above:
 
 ```ts
-import { gameState } from './gameState'
 import { createStore, combineReducers } from 'redux'
 import { register } from 'redux-pods'
 
 const store = createStore(
   combineReducers({
-    game: gameState
+    game,
   })
 )
 
