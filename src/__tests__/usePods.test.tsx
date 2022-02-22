@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { act } from 'react-dom/test-utils'
-import { state, synchronize, usePods } from '..'
-import { generateStore, asyncFn } from '../test-utils'
+import { state, usePods } from '..'
+import { generateStore } from '../test-utils'
 import { mount } from 'enzyme'
 
 describe('usePods and State use react hook', () => {
@@ -32,8 +32,32 @@ describe('usePods and State use react hook', () => {
       player.draft.username = to
     })
 
-    const store = generateStore({
+    generateStore({
       player
+    })
+
+    const Component = () => {
+      const userState = player.use()
+
+      return <div>{userState.username}</div>
+    }
+
+    const output = mount(<Component />)
+
+    expect(output.find(Component).text()).toBe('ryan')
+
+    act(() => {
+      setUsername('bob')
+    })
+
+    expect(output.find(Component).text()).toBe('bob')
+  })
+
+  it('updates state obj without redux', () => {
+    const player = state({ username: 'ryan' })
+
+    const setUsername = player.action((to: string) => {
+      player.draft.username = to
     })
 
     const Component = () => {

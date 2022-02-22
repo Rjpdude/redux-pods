@@ -7,11 +7,12 @@ export type BranchMapObject<T = any> = {
 }
 
 export enum ActionTypes {
+  ResolveStateTree = 'pod-action-resolve-state-tree',
   ResolveNext = 'pod-action-resolve-next',
+  ResolvePrimitives = 'pod-action-resolve-primitives',
   ActionHandler = 'pod-action-handler',
   Draft = 'pod-action-draft',
   StateTracker = 'pod-action-state-tracker',
-  ResolvePrimitives = 'pod-action-resolve-primitives'
 }
 
 export interface InternalActionType<S = any> {

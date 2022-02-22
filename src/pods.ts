@@ -16,6 +16,9 @@ export class Pods {
       )
     }
     this.stateTree = stateTree
+    this.stateTree.resolveCurrentState({
+      type: ActionTypes.ResolveStateTree
+    })
   }
 
   registerReduxStore(store: Store) {
