@@ -43,6 +43,12 @@ export class State<S = any> {
   private _draft: Draft<S> | undefined
 
   /**
+   * A boolean flag to maintain an awareness of when a concurrent action handler is currently
+   * being resolved.
+   */
+  public resolvingConcurrentFn = false
+
+  /**
    * The state's lock status. When true, it prevents a state draft from being created.
    * This should only ever be false when resolving an action within the reducer.
    */
@@ -53,11 +59,6 @@ export class State<S = any> {
    * prevents race conditions.
    */
   public actionsLocked = false
-
-  /**
-   * A map of other States and a tracker function callback that's called after state resolution.
-   */
-  private trackers = new Map<State<any>, StateTrackerFn<S, any>>()
 
   /**
    * The next state to apply to the redux store.
@@ -124,12 +125,6 @@ export class State<S = any> {
       this.current = this.next
       this._draft = undefined
 
-      // for (const [a, b] of this.trackers) {
-      //   a.resolveNext(false, () => {
-      //     b(this.next, this.previous)
-      //   })
-      // }
-
       podsInstance.setUpdatedState(this)
       podsInstance.resolveConcurrentObservers(this)
 
@@ -184,15 +179,17 @@ export class State<S = any> {
     if (!(trackedState instanceof State) || (trackedState as any) === this) {
       throw new Error('Trackers must reference a different state object.')
     }
+
     trackedState.observe((prev, cur) => {
-      this.resolve(() => {
-        trackerFn(prev, cur)
-      })
+      this.resolvingConcurrentFn = true
+      try {
+        this.resolve(() => {
+          trackerFn(prev, cur)
+        })
+      } finally {
+        this.resolvingConcurrentFn = false
+      }
     }, true)
-    // if (trackedState.trackers.has(this)) {
-    //   throw new Error('A tracker has already been created for this state.')
-    // }
-    // trackedState.trackers.set(this, trackerFn)
   }
 
   resolve(draftFn: DraftFn<S>) {

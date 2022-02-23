@@ -92,6 +92,13 @@ export class Pods {
 
   createActionHandler<S>(action: ActionCreator<S>, state: State<S>) {
     return (...args: any[]) => {
+      if (state.resolvingConcurrentFn) {
+        // execute immediately when called within a concurrent call stack.
+        // allows trackers to call their own action handlers.
+        action(...args)
+        return
+      }
+
       if (state.actionsLocked) {
         throw new Error(
           'To prevent race conditions, state actions cannot be called within watcher functions.'
@@ -109,10 +116,12 @@ export class Pods {
       this.store.dispatch({
         type: ActionTypes.ResolveNext
       })
-    } else if (this.stateTree) {
-      this.stateTree.resolveCurrentState({
-        type: ActionTypes.ResolveNext
-      })
+    } else {
+      if (this.stateTree) {
+        this.stateTree.resolveCurrentState({
+          type: ActionTypes.ResolveNext
+        })
+      }
       this.onStateRes()
     }
   }

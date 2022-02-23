@@ -23,6 +23,7 @@
     "lib/**/*"
   ],
   "scripts": {
+    "demo": "webpack-dev-server --config demo/webpack.config.js",
     "test": "jest --config ./jestconfig.json",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.tsx\"",
     "lint": "eslint src",
@@ -48,6 +49,7 @@
     "@types/mocha": "^9.1.0",
     "@types/react": "^17.0.39",
     "@types/react-dom": "^17.0.11",
+    "@types/styled-components": "^5.1.23",
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.12.0",
@@ -60,7 +62,13 @@
     "react-dom": "^17.0.0",
     "react-redux": "^7.2.6",
     "redux": "^4.0.4",
+    "styled-components": "^5.3.3",
     "ts-jest": "^24.0.2",
-    "typescript": "^4.0.0"
+    "ts-loader": "^9.2.6",
+    "twbs-react-grid": "^2.1.1",
+    "typescript": "^4.0.0",
+    "webpack": "^5.69.1",
+    "webpack-cli": "^4.9.2",
+    "webpack-dev-server": "^4.7.4"
   }
 }

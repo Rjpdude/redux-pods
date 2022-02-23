@@ -161,6 +161,8 @@ States expose an internal `use` hook that can provide the state directly, an ind
 
 ### Example 1
 
+The following example uses the entire user state object:
+
 ```tsx
 function Component() {
   const userState = user.use()
@@ -172,6 +174,8 @@ function Component() {
 ```
 
 ### Example 2
+
+The following example uses the specific `username` property of the user state:
 
 ```tsx
 function Component() {
@@ -185,6 +189,8 @@ function Component() {
 
 ### Example 3
 
+The following example uses a narrowed object of the user state containing the `id` and `username` properties:
+
 ```tsx
 function Component() {
   const { id, username } = user.use('id', 'username')
@@ -194,6 +200,8 @@ function Component() {
   )
 }
 ```
+
+### usePods
 
 You can also use multiple state values at once with the `usePods` hook:
 
