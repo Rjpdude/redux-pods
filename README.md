@@ -6,17 +6,17 @@ Redux Pods is a powerful state management API that can be integrated with or wit
 
 # Example
 
-The following example creates a simple state object with a `score` property, along with an action handler to add points to the score.
+The following example creates a simple pod state with a `score` property, along with an action handler to add points to the score.
 
 ```ts
 import { state } from 'redux-pods'
 
 const game = state({ 
-  score: 0
-})
+  score: 0,
 
-const add = game.action((points) => {
-  game.draft.score += points
+  add: (points: number) => {
+    game.score += points
+  }
 })
 ```
 
@@ -30,7 +30,7 @@ function Counter() {
     <div>
       <p>Score: {score}</p>
 
-      <button onClick={() => add(1)}>
+      <button onClick={() => game.add(1)}>
         Click me
       </button>
     </div>
@@ -46,7 +46,7 @@ Pod States can be observed using [React Hooks](#hooks) right out of the box, wit
 
 ## Redux
 
-State objects are actually enhanced reducer functions. As such, they can be included directly in your Redux store alongside and in exactly the same way as traditional reducer functions.
+Pod States expose a `reducer` method which can be included in your redux store right alongside your other reducer functions.
 
 To allow Pod States to function within your Redux store, simply call `register` after your store has been created. The following is an example of a simple redux store using the [game](#example) state from above:
 
@@ -56,7 +56,7 @@ import { register } from 'redux-pods'
 
 const store = createStore(
   combineReducers({
-    game,
+    game: game.reducer,
   })
 )
 
@@ -73,26 +73,48 @@ The store's initial state will look like:
 }
 ```
 
+# State
+
+To create a pod state, supply an object with the state's initial properties and action handler functions. Here is a more complete example of a game state:
+
+```ts
+import { state } from 'redux-pods'
+
+const game = state({
+  level: -1,
+  countdown: -1,
+  score: 0,
+
+  init: (level: number) => {
+    game.level = level
+  },
+
+  points: (modifier: number) => {
+    game.score += modifier
+  }
+})
+```
+
+
+
 # Actions
 
-**Pod states can be updated using action handlers, resolver functions and state trackers.**
+**Pod states can be updated within action handlers, resolve functions and state trackers.**
 
-State changes can be effected within action callbacks through the state's `draft` property - a mutable copy of the state object produced by [Immer](https://immerjs.github.io/immer/). After the action callback is fully resolved, the draft is finalized and returned as the new state object.
-
-You can also access the state's `current` property - the actual current state object. This is useful for maintining an awareness of the current state to compare against pending changes on the draft.
+Changes can be made to a pod state within action callback functions by reference the state object directly. You can use the states `getState` method to reference the current immutable state object anywhere in your callback.
 
 ## actionSet
 
-Action handlers can be generated individually through a state's `action` method, or in a set through a state's `actionSet` method. Below is an example of an action set for [gameState](#example):
+Action handlers can be generated individually through a state's `action` method, or in a set through a state's `actionSet` method. Below is an example of an action set for [game state](#example):
 
 ```ts
-const gameActions = gameState.actionSet({
-  multiplyScore: (mult: number) => {
-    gameState.draft.score *= mult
+const gameActions = game.actionSet({
+  reduce: (by: number) => {
+    game.score -= by
   },
 
-  resetScore: () => {
-    gameState.draft.score = 0
+  multiply: (by: number) => {
+    game.score *= by
   }
 })
 ```
@@ -102,33 +124,35 @@ const gameActions = gameState.actionSet({
 States expose a `resolve` method, allowing dynamic state updates from anywhere in your application. For example, resolvers can be used to effect changes to a state within asynchronous functions.
 
 ```ts
-const userState = state({ 
+const user = state({ 
   username: ''
 })
 
 const loadUser = async (key: string) => {
   const userData = await api(key)
 
-  userState.resolve((draft) => {
-    draft.username = userData.username
+  user.resolve(() => {
+    user.username = userData.username
   })
 }
 ```
 
 ## track
 
-States expose a `track` method to track changes made to another state. When a change is detected, tracker callbacks are provided the tracked state's current and previous value, and can draft updates as a result.
+States expose a `track` method to track changes made to another state. When a change is detected, tracker callbacks are called with the tracked state's current and previous value, and can generate updates as a result.
 
-Consider a user state with a `highscore` property that needs to be updated everytime the game state's `score` property is higher:
+Consider a user state that needs to record every increase to the game state's `score`:
 
 ```ts
-const userState = state({
-  highscore: 0
+const user = state({
+  total: 0
 })
 
-userState.track(gameState, ({ score }) => {
-  if (score > userState.current.highscore) {
-    userState.draft.highscore = score
+user.track(game, (gameState, prevGameState) => {
+  const pointsAdded = gameState.score - prevGameState.score
+  
+  if (pointsAdded > 0) {
+    user.total += pointsAdded
   }
 })
 ```
@@ -139,14 +163,14 @@ userState.track(gameState, ({ score }) => {
 
 **Pod State's expose `observe` to track changes to their state.**
 
-A state observer can be established at any level of your application. The provided callback will resolve with the state's current and previous value. Observers can be used to enact any kind of side effect - however, they **cannot** be used to directly nor indirectly update their own state.
+A state observer can be established at any level of your application. The provided callback will resolve with the state's previous value. Observers can be used to enact any kind of side effect - however, they **cannot** be used to directly nor indirectly update their own state.
 
-Consider an API call that needs to be made everytime the game state `score` property changes.
+Consider an API call that needs to be made everytime the game state's `score` property changes:
 
 ```ts
-game.observe((state, prevState) => {
-  if (state.score !== prevState.score) {
-    syncGameScore(state.score)
+game.observe((prevState) => {
+  if (game.score !== prevState.score) {
+    syncGameScore(game.score)
   }
 })
 ```
@@ -157,7 +181,6 @@ Observers are used and established for all internal observance methods. For exam
 
 **Redux Pods comes pre-bundled with hook functions that can be used out of the box in React components.**
 
-States expose an internal `use` hook that can provide the state directly, an individual property of the state object or a subset of a state object. You can also import the `usePods` hook to provide a set of multiple state objects.
 
 ### Example 1
 

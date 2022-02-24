@@ -1,13 +1,31 @@
 import { Store } from 'redux'
-import { StateTree, State, ActionTypes, ActionCreator, Observer, ObserverType } from './exports'
 import { resolveStatePaths } from './util'
+import {
+  StateTree,
+  State,
+  ActionTypes,
+  Observer,
+  ObserverType,
+  ResolutionStatus
+} from './exports'
 
 export class Pods {
-  private store: Store
   private stateTree: StateTree
+  private store: Store
+  private resolutionStatus = ResolutionStatus.Pendng
+
   private states = new Set<State>()
   private updatedStates = new Set<State>()
-  private stateTrackers = new Map<State[], Observer>()
+  private observers = new Map<State[], Observer>()
+
+  registerReduxStore(store: Store) {
+    this.store = store
+    this.setStatePaths(store.getState())
+
+    store.subscribe(() => {
+      this.onStateRes()
+    })
+  }
 
   registerStateTree(stateTree: StateTree) {
     if (this.store) {
@@ -21,49 +39,11 @@ export class Pods {
     })
   }
 
-  registerReduxStore(store: Store) {
-    this.store = store
-    this.setStatePaths(store.getState())
-
-    store.subscribe(() => {
-      this.onStateRes()
-    })
-  }
-
-  onStateRes() {
-    if (this.updatedStates.size === 0) {
-      return
+  registerState(state: State<any>) {
+    if (this.states.has(state)) {
+      throw new Error('State has already been registered.')
     }
-
-    for (const [trackedStates, observer] of this.stateTrackers) {
-      if (observer.type === ObserverType.Consecutive) {
-        const updated = trackedStates.some((s) => this.updatedStates.has(s))
-  
-        if (updated) {
-          observer.fn()
-        }
-      }
-    }
-
-    this.updatedStates.clear()
-  }
-
-  resolveConcurrentObservers(state: State) {
-    for (const [trackedStates, observer] of this.stateTrackers) {
-      if (observer.type === ObserverType.Concurrent) {
-        if (trackedStates.includes(state)) {
-          observer.fn()
-        }
-      }
-    }
-  }
-
-  setStatePaths(storeState: any) {
-    resolveStatePaths(storeState, new Set(this.states))
-
-    this.store.dispatch({
-      type: ActionTypes.ResolvePrimitives
-    })
+    this.states.add(state)
   }
 
   setUpdatedState(state: State<any>) {
@@ -72,41 +52,115 @@ export class Pods {
     }
   }
 
-  createStateTracker(states: State[], fn: () => void, type = ObserverType.Consecutive) {
-    this.stateTrackers.set(states, {
+  private onStateRes() {
+    if (this.updatedStates.size === 0) {
+      return
+    }
+
+    for (const state of this.updatedStates) {
+      state.applyInternalState()
+    }
+
+    this.resolveConsecutiveObservers()
+    this.updatedStates.clear()
+  }
+
+  setObserver(
+    states: State | State[],
+    type: ObserverType,
+    observerFn: () => void
+  ) {
+    const arr = Array.isArray(states) ? [...states] : [states]
+
+    this.observers.set(arr, {
       type,
-      fn
+      fn: observerFn
     })
 
     return () => {
-      this.stateTrackers.delete(states)
+      this.observers.delete(arr)
     }
   }
 
-  registerState(state: State<any>) {
-    if (this.states.has(state)) {
-      throw new Error('State has already been registered.')
+  sideEffects() {
+    const actuallyUpdatedStates = new Set<State>()
+
+    for (let state of this.updatedStates) {
+      const updated = state.checkDraftUpdate()
+
+      if (!updated) {
+        this.updatedStates.delete(state)
+      } else {
+        if (!actuallyUpdatedStates.has(state)) {
+          actuallyUpdatedStates.add(state)
+        }
+        this.resolveConcurrentObservers(state)
+      }
     }
-    this.states.add(state)
+
+    if (actuallyUpdatedStates.size) {
+      this.updatedStates = actuallyUpdatedStates
+      this.next()
+    }
   }
 
-  createActionHandler<S>(action: ActionCreator<S>, state: State<S>) {
+  resolveObservers(
+    type: ObserverType,
+    resolve: (trackedStates: State[], fn: Observer['fn']) => void
+  ) {
+    const status =
+      type === ObserverType.Concurrent
+        ? ResolutionStatus.ConcurrentAction
+        : ResolutionStatus.ConsecutiveAction
+
+    this.useResolutionStatus(status, () => {
+      for (const [trackedStates, observer] of this.observers) {
+        if (observer.type === type) {
+          resolve(trackedStates, observer.fn)
+        }
+      }
+    })
+  }
+
+  resolveConsecutiveObservers() {
+    this.resolveObservers(ObserverType.Consecutive, (trackedStates, fn) => {
+      const updated = trackedStates.some((s) => this.updatedStates.has(s))
+
+      if (updated) {
+        fn()
+      }
+    })
+  }
+
+  resolveConcurrentObservers(state: State) {
+    this.resolveObservers(ObserverType.Concurrent, (trackedStates, fn) => {
+      if (trackedStates.includes(state)) {
+        fn()
+      }
+    })
+  }
+
+  resolveConcurrentFn(fn: () => void) {
+    if (this.resolvingWithin(ResolutionStatus.ConcurrentAction)) {
+      throw new Error('Apply handlers cannot be called within the callstack of observer-like functions.')
+    }
+
+    this.useResolutionStatus(ResolutionStatus.ConcurrentAction, () => {
+      fn()
+      this.sideEffects()
+    })
+  }
+
+  generateActionHandler(fn: (...args: any[]) => void) {
     return (...args: any[]) => {
-      if (state.resolvingConcurrentFn) {
-        // execute immediately when called within a concurrent call stack.
-        // allows trackers to call their own action handlers.
-        action(...args)
-        return
+      if (this.resolvingWithin(ResolutionStatus.ConcurrentAction)) {
+        throw new Error('Action handlers cannot be called within the callstack of observer-like functions.')
       }
 
-      if (state.actionsLocked) {
-        throw new Error(
-          'To prevent race conditions, state actions cannot be called within watcher functions.'
-        )
-      }
-
-      state.resolveNext(true, () => {
-        return action(...args)
+      return this.useResolutionStatus(ResolutionStatus.ActionHandler, () => {
+        const res = fn(...args)
+        this.sideEffects()
+        return res
       })
     }
   }
@@ -126,7 +180,44 @@ export class Pods {
     }
   }
 
+  setStatePaths(storeState: any) {
+    resolveStatePaths(storeState, new Set(this.states))
+
+    this.store.dispatch({
+      type: ActionTypes.ResolvePrimitives
+    })
+  }
+
+  useResolutionStatus(resolutionStatus: ResolutionStatus, fn: () => void) {
+    const previousStatus = this.resolutionStatus
+
+    this.resolutionStatus = resolutionStatus
+
+    let res
+    try {
+      res = fn()
+    } finally {
+      this.resolutionStatus = previousStatus
+    }
+    return res
+  }
+
+  resolvingWithin(...status: ResolutionStatus[]) {
+    return status.includes(this.resolutionStatus)
+  }
+
   getState() {
     return this.stateTree
+  }
+
+  /** for testing only */
+
+  reset() {
+    this.store = undefined as any
+    this.stateTree = undefined as any
+    this.resolutionStatus = ResolutionStatus.Pendng
+    this.states.clear()
+    this.updatedStates.clear()
+    this.observers.clear()
   }
 }

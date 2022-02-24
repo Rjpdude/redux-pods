@@ -1,52 +1,58 @@
-import { state } from '../exports'
+import { state, StateProperties, PodState } from '../exports'
 import { generateStore } from '../test-utils'
+
+interface Game {
+  score: number
+}
 
 describe('State action sets', () => {
   it('sets state from action handlers', () => {
-    const game = state({
+    const initialState: Game = {
       score: 0
-    })
+    }
 
-    const actions = game.actionSet({
-      setScore: (score: number) => {
-        game.draft.score = score
+    const game = state(initialState, {
+      add(num: number) {
+        game.score += num
       },
-      reset: () => {
-        game.draft.score = 0
+
+      remove(num: number) {
+        game.score -= num
       }
     })
 
-    const store = generateStore({ game })
+    const store = generateStore({ game: game.reducer })
 
-    actions.setScore(10)
+    game.add(10)
     expect(store.getState().game.score).toBe(10)
-    actions.reset()
-    expect(store.getState().game.score).toBe(0)
+
+    game.remove(5)
+    expect(store.getState().game.score).toBe(5)
   })
 
   it('only calls state resolvers once', () => {
     const game = state({
-      score: 0
+      score: 0,
+
+      setScore: (score: number) => {
+        setScore()
+        game.score = score
+      },
+      reset: () => {
+        reset()
+        game.score = 0
+      }
     })
 
-    const setScore = jest.fn((score: number) => {
-      game.draft.score = score
-    })
+    const setScore = jest.fn()
 
-    const reset = jest.fn(() => {
-      game.draft.score = 0
-    })
+    const reset = jest.fn()
 
-    const actions = game.actionSet({
-      setScore,
-      reset
-    })
+    const store = generateStore({ game: game.reducer })
 
-    const store = generateStore({ game })
-
-    actions.setScore(10)
+    game.setScore(10)
     expect(store.getState().game.score).toBe(10)
-    actions.reset()
+    game.reset()
     expect(store.getState().game.score).toBe(0)
 
     expect(setScore).toHaveBeenCalledTimes(1)

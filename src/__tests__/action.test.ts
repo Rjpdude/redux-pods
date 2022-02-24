@@ -4,50 +4,50 @@ import { generateStore } from '../test-utils'
 describe('State action handler', () => {
   it('sets state from action handlers', () => {
     const game = state({
-      score: 0
+      score: 0,
+
+      setScore: (to: number) => {
+        game.score = to
+      },
+      reset: () => {
+        game.score = 0
+      }
     })
 
-    const setScore = game.action((to: number) => {
-      game.draft.score = to
-    })
+    const store = generateStore({ game: game.reducer })
 
-    const reset = game.action(() => {
-      game.draft.score = 0
-    })
-
-    const store = generateStore({ game })
-
-    setScore(10)
+    game.setScore(10)
     expect(store.getState().game.score).toBe(10)
 
-    reset()
+    game.reset()
     expect(store.getState().game.score).toBe(0)
   })
 
   it('only calls state resolvers once', () => {
+    const setScoreSpy = jest.fn()
+    const resetSpy = jest.fn()
+
     const game = state({
-      score: 0
+      score: 0,
+
+      setScore: (score: number) => {
+        setScoreSpy()
+        game.score = score
+      },
+      reset: () => {
+        resetSpy()
+        game.score = 0
+      }
     })
 
-    const setScoreMock = jest.fn((score: number) => {
-      game.draft.score = score
-    })
+    const store = generateStore({ game: game.reducer })
 
-    const resetMock = jest.fn(() => {
-      game.draft.score = 0
-    })
-
-    const setScore = game.action(setScoreMock)
-    const reset = game.action(resetMock)
-
-    const store = generateStore({ game })
-
-    setScore(10)
+    game.setScore(10)
     expect(store.getState().game.score).toBe(10)
-    reset()
+    game.reset()
     expect(store.getState().game.score).toBe(0)
 
-    expect(setScoreMock).toHaveBeenCalledTimes(1)
-    expect(resetMock).toHaveBeenCalledTimes(1)
+    expect(setScoreSpy).toHaveBeenCalledTimes(1)
+    expect(resetSpy).toHaveBeenCalledTimes(1)
   })
 })

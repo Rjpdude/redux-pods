@@ -1,1 +1,10 @@
-export { tree, branch, register, state, usePods } from './exports'
+export {
+  tree,
+  branch,
+  register,
+  state,
+  observe,
+  apply,
+  track,
+  usePods
+} from './exports'

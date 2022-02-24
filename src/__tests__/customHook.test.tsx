@@ -11,21 +11,21 @@ describe('Custom hook functions', () => {
     const game = state({ score: 10 })
 
     const store = generateStore({
-      player,
-      game
+      player: player.reducer,
+      game: player.reducer
     })
 
     function useData() {
-      const [username, setUsername] = React.useState(player.current.username)
-      const [score, setScore] = React.useState(game.current.score)
+      const [username, setUsername] = React.useState(player.username)
+      const [score, setScore] = React.useState(game.score)
 
       React.useEffect(() => {
-        const unregisterUser = player.observe(({ username }) => {
-          setUsername(username)
+        const unregisterUser = player.observe(() => {
+          setUsername(player.username)
         })
 
-        const unregisterGame = game.observe(({ score }) => {
-          setScore(score)
+        const unregisterGame = game.observe(() => {
+          setScore(game.score)
         })
 
         return () => {
@@ -58,11 +58,11 @@ describe('Custom hook functions', () => {
     expect(output.find('#score').text()).toBe('10')
 
     act(() => {
-      player.resolve((draft) => {
-        draft.username = 'john'
+      player.resolve(() => {
+        player.username = 'john'
       })
-      game.resolve((draft) => {
-        draft.score = 50
+      game.resolve(() => {
+        game.score = 50
       })
     })
 
@@ -75,8 +75,8 @@ describe('Custom hook functions', () => {
     const game = state({ score: 10 })
 
     const store = generateStore({
-      player,
-      game
+      player: player.reducer,
+      game: game.reducer
     })
 
     function useData() {
@@ -106,11 +106,11 @@ describe('Custom hook functions', () => {
     expect(output.find('#score').text()).toBe('10')
 
     act(() => {
-      player.resolve((draft) => {
-        draft.username = 'john'
+      player.resolve(() => {
+        player.username = 'john'
       })
-      game.resolve((draft) => {
-        draft.score = 50
+      game.resolve(() => {
+        game.score = 50
       })
     })
 
@@ -122,18 +122,18 @@ describe('Custom hook functions', () => {
     const player = state({ username: 'ryan' })
 
     const store = generateStore({
-      player
+      player: player.reducer
     })
 
     const fn = jest.fn()
 
     function useData() {
-      const [username, setUsername] = React.useState(player.current.username)
+      const [username, setUsername] = React.useState(player.username)
 
       React.useEffect(() => {
-        return player.observe(({ username }) => {
-          fn(username)
-          setUsername(username)
+        return player.observe(() => {
+          fn(player.username)
+          setUsername(player.username)
         })
       }, [])
 
@@ -153,8 +153,8 @@ describe('Custom hook functions', () => {
     )
 
     act(() => {
-      player.resolve((draft) => {
-        draft.username = 'john'
+      player.resolve(() => {
+        player.username = 'john'
       })
     })
 
@@ -163,8 +163,8 @@ describe('Custom hook functions', () => {
 
     output.unmount()
 
-    player.resolve((draft) => {
-      draft.username = 'mike'
+    player.resolve(() => {
+      player.username = 'mike'
     })
 
     expect(fn).not.toHaveBeenCalledWith('mike')

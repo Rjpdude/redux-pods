@@ -1,17 +1,12 @@
 import * as React from 'react'
 import { act } from 'react-dom/test-utils'
-import { state, usePods } from '..'
-import { generateStore } from '../test-utils'
+import { state, usePods, apply, observe } from '..'
 import { mount } from 'enzyme'
 
 describe('usePods and State use react hook', () => {
   it('provides state obj', () => {
     const player = state({
       username: 'ryan'
-    })
-
-    const store = generateStore({
-      player
     })
 
     const Component = () => {
@@ -26,14 +21,12 @@ describe('usePods and State use react hook', () => {
   })
 
   it('updates state obj', () => {
-    const player = state({ username: 'ryan' })
+    const player = state({
+      username: 'ryan',
 
-    const setUsername = player.action((to: string) => {
-      player.draft.username = to
-    })
-
-    generateStore({
-      player
+      login: (username: string) => {
+        player.username = username
+      }
     })
 
     const Component = () => {
@@ -47,17 +40,19 @@ describe('usePods and State use react hook', () => {
     expect(output.find(Component).text()).toBe('ryan')
 
     act(() => {
-      setUsername('bob')
+      player.login('bob')
     })
 
     expect(output.find(Component).text()).toBe('bob')
   })
 
   it('updates state obj without redux', () => {
-    const player = state({ username: 'ryan' })
+    const player = state({
+      username: 'ryan',
 
-    const setUsername = player.action((to: string) => {
-      player.draft.username = to
+      login: (username: string) => {
+        player.username = username
+      }
     })
 
     const Component = () => {
@@ -71,7 +66,7 @@ describe('usePods and State use react hook', () => {
     expect(output.find(Component).text()).toBe('ryan')
 
     act(() => {
-      setUsername('bob')
+      player.login('bob')
     })
 
     expect(output.find(Component).text()).toBe('bob')
@@ -86,10 +81,6 @@ describe('usePods and State use react hook', () => {
       }
     })
 
-    generateStore({
-      player
-    })
-
     const spy = jest.fn()
 
     const Component = () => {
@@ -102,7 +93,7 @@ describe('usePods and State use react hook', () => {
       return <div />
     }
 
-    const output = mount(<Component />)
+    mount(<Component />)
 
     expect(spy).toHaveBeenCalledWith({
       username: 'ryan',
@@ -110,8 +101,8 @@ describe('usePods and State use react hook', () => {
     })
 
     act(() => {
-      player.resolve((draft) => {
-        draft.username = 'john'
+      apply(() => {
+        player.username = 'john'
       })
     })
 
@@ -122,9 +113,9 @@ describe('usePods and State use react hook', () => {
     expect(spy).toHaveBeenCalledTimes(2)
 
     act(() => {
-      player.resolve((draft) => {
-        draft.id = 5
-        draft.data.loggedIn = false
+      apply(() => {
+        player.id = 5
+        player.data.loggedIn = false
       })
     })
 
@@ -134,11 +125,6 @@ describe('usePods and State use react hook', () => {
   it('provides multiple states', () => {
     const player = state({ username: 'ryan' })
     const game = state({ score: 10 })
-
-    const store = generateStore({
-      player,
-      game
-    })
 
     const Component = () => {
       const [playerData, gameData] = usePods(player, game)
@@ -158,18 +144,21 @@ describe('usePods and State use react hook', () => {
   })
 
   it('updated multiple states across multiple components', async () => {
-    const player = state({ username: 'ryan' })
-    const game = state({ score: 10 })
+    const player = state({ 
+      username: 'ryan',
 
-    const setUsername = player.action((to: string) => {
-      player.draft.username = to
+      setUsername: (to: string) => {
+        player.username = to
+      }
     })
 
-    const setScore = game.action((to: number) => {
-      game.draft.score = to
-    })
+    const game = state({ 
+      score: 10,
 
-    const store = generateStore({ player, game })
+      setScore: (to: number) => {
+        game.score = to
+      }
+    })
 
     const spy1 = jest.fn()
     const spy2 = jest.fn()
@@ -195,7 +184,7 @@ describe('usePods and State use react hook', () => {
       return <div />
     }
 
-    const output = mount(
+    mount(
       <>
         <Component />
         <Component2 />
@@ -206,8 +195,8 @@ describe('usePods and State use react hook', () => {
     expect(spy2).toHaveBeenNthCalledWith(1, 'ryan', 10)
 
     act(() => {
-      setUsername('jeremy')
-      setScore(100)
+      player.setUsername('jeremy')
+      game.setScore(100)
     })
 
     expect(spy1).toHaveBeenNthCalledWith(

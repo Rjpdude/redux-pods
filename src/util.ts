@@ -1,4 +1,4 @@
-import { State, Exposed } from './exports'
+import { State, PodState } from './exports'
 
 export function isPrimitive(val: any) {
   return [
@@ -19,8 +19,8 @@ export function unwrap<T>(val: T): T {
   return (val instanceof Object ? (val as Object).valueOf() : val) as T
 }
 
-export function mapStateValues(states: State[] | Exposed<State>[]) {
-  return states.map(({ current }) => current)
+export function mapStateValues(states: State[] | PodState[]) {
+  return states.map(({ getState }) => getState())
 }
 
 export function resolveStatePaths(

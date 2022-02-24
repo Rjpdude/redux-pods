@@ -18,12 +18,12 @@ const transactions = state({
 
 /** branches */
 const global = branch({
-  user,
+  user
 })
 
 const session = branch({
   game,
-  transactions,
+  transactions
 })
 
 /** state tree */
@@ -48,15 +48,15 @@ describe('State tree tests', () => {
         },
         transactions: {
           pending: [],
-          previous: [],
+          previous: []
         }
       }
     })
   })
 
   it('applies updates to state tree from resolver action', () => {
-    game.resolve((draft) => {
-      draft.score = 10
+    game.resolve(() => {
+      game.score = 10
     })
 
     expect(stateTree.getState()).toEqual({
@@ -73,7 +73,7 @@ describe('State tree tests', () => {
         },
         transactions: {
           pending: [],
-          previous: [],
+          previous: []
         }
       }
     })

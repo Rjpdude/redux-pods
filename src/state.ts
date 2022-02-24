@@ -3,23 +3,19 @@ import {
   ActionTypes,
   ActionResolver,
   InternalActionType,
-  DraftFn,
-  StatefulActionSet,
-  ActionCreator,
-  ActionSet,
-  Exposed,
-  StateTrackerFn,
-  WatcherCallback,
-  StateHook,
   getReact,
-  ObserverType,
+  ObserverType
 } from './exports'
 
+import { observe } from '.'
 import { isPrimitive, wrap, unwrap } from './util'
 
 import { v4 as uuid } from 'uuid'
-import { createDraft, finishDraft, Draft } from 'immer'
+import { createDraft, finishDraft, isDraft, current, enableMapSet, Draft } from 'immer'
 import get from 'lodash.get'
+import { ResolutionStatus } from './types'
+
+enableMapSet()
 
 export class State<S = any> {
   /**
@@ -38,17 +34,6 @@ export class State<S = any> {
   private initialState: Readonly<S>
 
   /**
-   * The drafted state value, set when a state resolver function accesses the `draft` member.
-   */
-  private _draft: Draft<S> | undefined
-
-  /**
-   * A boolean flag to maintain an awareness of when a concurrent action handler is currently
-   * being resolved.
-   */
-  public resolvingConcurrentFn = false
-
-  /**
    * The state's lock status. When true, it prevents a state draft from being created.
    * This should only ever be false when resolving an action within the reducer.
    */
@@ -61,14 +46,16 @@ export class State<S = any> {
   public actionsLocked = false
 
   /**
-   * The next state to apply to the redux store.
+   * The next state as a mutable Draft object - applied after the resolution callstack.
    */
-  private next: Readonly<S>
+  private next: Draft<S>
+
+  private lastProducedDraft: Readonly<S>
 
   /**
-   * The state's current value within the redux store.
+   * The state's current value within the redux store
    */
-  public current: Readonly<S>
+  private current: Readonly<S>
 
   /**
    * The previous state value.
@@ -88,131 +75,69 @@ export class State<S = any> {
     podsInstance.registerState(this)
   }
 
-  reducer(state: S = this.initialState, action: InternalActionType<S>) {
-    if (action.type === ActionTypes.ResolvePrimitives) {
-      return this.resolveWrappedState(state)
-    }
-
-    if (action.type === ActionTypes.ResolveNext) {
-      const next = this.next
-
-      if (next !== undefined) {
-        this.next = undefined as any
-        return next
-      }
+  reducer(state: S = this.initialState, action: InternalActionType) {
+    if (action.type === ActionTypes.ResolveNext && this.lastProducedDraft !== undefined) {
+      return this.lastProducedDraft
     }
     return state
   }
 
-  resolveNext = (finalize: boolean, resolver: ActionResolver<S>) => {
-    let next = this.current
-
-    this.draftLocked = false
-
-    const res = resolver()
-
-    this.draftLocked = true
-
-    if (res !== undefined && res !== this._draft) {
-      next = res
-    } else if (this._draft) {
-      next = finishDraft(this._draft) as S
-    }
-
-    if (next !== this.current) {
-      this.next = next
+  applyInternalState() {
+    if (this.lastProducedDraft) {
       this.previous = this.current
-      this.current = this.next
-      this._draft = undefined
-
-      podsInstance.setUpdatedState(this)
-      podsInstance.resolveConcurrentObservers(this)
-
-      if (finalize) {
-        podsInstance.next()
-      }
+      this.current = this.lastProducedDraft
     }
+    this.lastProducedDraft = undefined as any
+    this.next = undefined as any
   }
 
-  private resolveWrappedState(state: S) {
-    const unwrapped = unwrap(state)
-    this.initialState = unwrapped
-    this.current = unwrapped
-    return unwrapped
+  checkDraftUpdate() {
+    if (!isDraft(this.next)) {
+      return false
+    }
+
+    this.lastProducedDraft = finishDraft(createDraft(current(this.next))) as any
+
+    return this.lastProducedDraft !== this.getState()
   }
 
-  get draft() {
-    const currentState = this.next === undefined ? this.current : this.next
-
-    if (this.draftLocked) {
-      throw new Error(
-        'State drafts can only be accessed within action creator or resolver functions.'
+  getProxiedState() {
+    if (
+      podsInstance.resolvingWithin(
+        ResolutionStatus.ActionHandler,
+        ResolutionStatus.ConcurrentAction
       )
-    }
-
-    if (isPrimitive(currentState)) {
-      throw new Error(
-        `Primitive state values cannot be drafted - consider using 'current' instead.`
-      )
-    }
-
-    return this._draft || (this._draft = createDraft(currentState))
-  }
-
-  action<A extends ActionCreator<S>>(
-    actionHandler: A
-  ): (...args: Parameters<A>) => void {
-    return podsInstance.createActionHandler(actionHandler, this)
-  }
-
-  actionSet<O extends StatefulActionSet<S>>(obj: O): ActionSet<O> {
-    return Object.entries(obj).reduce(
-      (actionSet, [key, fn]) => ({
-        ...actionSet,
-        [key]: podsInstance.createActionHandler(fn, this)
-      }),
-      {}
-    ) as ActionSet<O>
-  }
-
-  track<P>(trackedState: Exposed<State<P>>, trackerFn: WatcherCallback<P, S | void>) {
-    if (!(trackedState instanceof State) || (trackedState as any) === this) {
-      throw new Error('Trackers must reference a different state object.')
-    }
-
-    trackedState.observe((prev, cur) => {
-      this.resolvingConcurrentFn = true
-      try {
-        this.resolve(() => {
-          trackerFn(prev, cur)
-        })
-      } finally {
-        this.resolvingConcurrentFn = false
+    ) {
+      if (this.next === undefined) {
+        try {
+          this.next = createDraft(this.getState())
+        } catch (error) {
+          console.error(
+            'Error drafting state object from current state.',
+            this.getState(),
+            error
+          )
+        }
       }
-    }, true)
-  }
 
-  resolve(draftFn: DraftFn<S>) {
-    this.resolveNext(true, () => {
-      draftFn(isPrimitive(this.current) ? (this.current as any) : this.draft)
-    })
-  }
-
-  observe = (callback: WatcherCallback<S>, concurrent = false) => {
-    return podsInstance.createStateTracker([this], () => {
-      this.actionsLocked = true
-
-      try {
-        callback(this.current, this.previous)
-      } catch (error) {
-        console.error('Error resolving watcher callback function.', error)
-      } finally {
-        this.actionsLocked = false
+      if (isDraft(this.next)) {
+        podsInstance.setUpdatedState(this)
+        return this.next
       }
-    }, concurrent ? ObserverType.Concurrent : ObserverType.Consecutive)
+    }
+    return this.getState()
   }
 
-  use: StateHook<S> = (...args: any[]) => {
+  use(): Readonly<S>
+  use<K extends keyof S>(stateKey: K): Readonly<S[K]>
+  use<K extends keyof S>(
+    ...stateKeys: K[]
+  ): Readonly<
+    {
+      [P in K]: S[P]
+    }
+  >
+  use(...args: any[]) {
     const React = getReact()
 
     const resolveStateFromArg = () => {
@@ -237,7 +162,7 @@ export class State<S = any> {
     const [state, setState] = React.useState(resolveStateFromArg)
 
     React.useEffect(() => {
-      return podsInstance.createStateTracker([this], () => {
+      return observe(this, () => {
         setState((cur: any) => {
           const next = resolveStateFromArg() as S
 
@@ -258,7 +183,15 @@ export class State<S = any> {
     return state
   }
 
-  map(storeState: any): S {
+  getInstance() {
+    return this
+  }
+
+  getState() {
+    return this.current
+  }
+
+  mapState(storeState: any): S {
     return get(storeState, this.path)
   }
 

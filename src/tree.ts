@@ -1,4 +1,4 @@
-import { State, InternalActionType } from './exports'
+import { InternalActionType } from './exports'
 
 export class StateTree<S = any> {
   private state: S
@@ -8,9 +8,12 @@ export class StateTree<S = any> {
     this.treeMap = treeMap
   }
 
-  resolveCurrentState(action: InternalActionType, branch = this.treeMap): S {
-    if (branch instanceof State) {
-      return (branch as State<any>).reducer(branch.current, action)
+  resolveCurrentState(
+    action: InternalActionType,
+    branch: any = this.treeMap
+  ): S {
+    if (typeof branch.reducer === 'function') {
+      return branch.reducer(branch.getState(), action)
     }
 
     const obj = Object.entries(branch).reduce(
