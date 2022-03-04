@@ -253,7 +253,7 @@ describe('compute yeilds', () => {
       c: 1,
 
       *sum() {
-        yield [this.a, this.b]
+        yield this.a | this.b
 
         computeFnSpy()
 
