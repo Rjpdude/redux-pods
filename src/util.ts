@@ -1,14 +1,9 @@
 import { State, PodState } from './exports'
 
 export function isPrimitive(val: any) {
-  return [
-    'string',
-    'number',
-    'boolean',
-    'bigint',
-    'symbol',
-    'undefined'
-  ].includes(typeof val)
+  return ['string', 'number', 'boolean', 'bigint', 'symbol'].includes(
+    typeof val
+  )
 }
 
 export function wrap<T>(val: T): T {
@@ -21,6 +16,19 @@ export function unwrap<T>(val: T): T {
 
 export function mapStateValues(states: State[] | PodState[]) {
   return states.map(({ getState }) => getState())
+}
+
+export function wrapPrimitives(obj: any) {
+  for (const [key, val] of Object.entries(obj)) {
+    if (isPrimitive(val)) {
+      obj[key] = new Object(val)
+    } else if (typeof val === 'object') {
+      if (val instanceof Set || val instanceof Map) {
+        continue
+      }
+      wrapPrimitives(val)
+    }
+  }
 }
 
 export function resolveStatePaths(

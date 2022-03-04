@@ -3,15 +3,13 @@ import {
   podsInstance,
   StateTree,
   State,
-  InferStates,
   BranchMapObject,
-  PodState,
-  FunctionProperties,
-  StateProperties
+  PodState
 } from './exports'
-import { mapStateValues, reactError } from './util'
-import { createDraft, finishDraft } from 'immer'
+import { generateStateProxy } from './proxy'
+import { reactError } from './util'
 import { ObserverType } from './types'
+import get from 'lodash.get'
 
 export function register(store: Store) {
   podsInstance.registerReduxStore(store)
@@ -28,31 +26,42 @@ export function branch<B>(branch: BranchMapObject<B>): B {
 }
 
 export function observe<T>(
-  podState: PodState<T> | State<T>,
-  observerFn: (previousState: T) => void
+  toTrack: PodState<T> | State<T> | T,
+  observerFn: (cur: T, prev: T) => void
 ) {
-  const stateInstance = podState instanceof State ? podState : getPodStateInstance(podState)
+  let trackerObj =
+    toTrack instanceof State ? toTrack : getPodStateInstance(toTrack)
+
+  if (!(trackerObj instanceof State)) {
+    trackerObj = podsInstance.useLastStateReference()
+    podsInstance.clearReferenceMap()
+  }
 
   return podsInstance.setObserver(
-    stateInstance,
+    [trackerObj],
     ObserverType.Consecutive,
-    () => {
-      observerFn(stateInstance.previous)
+    ([val]) => {
+      observerFn(val.cur, val.prev)
     }
   )
 }
 
 export function track<T>(
-  podState: PodState<T>,
-  trackerFn: (previousState: T) => void
+  toTrack: PodState<T> | T,
+  trackerFn: (cur: T, prev: T) => void
 ) {
-  const stateInstance = getPodStateInstance(podState)
+  let trackerObj = getPodStateInstance(toTrack)
+
+  if (!(trackerObj instanceof State)) {
+    trackerObj = podsInstance.useLastStateReference()
+    podsInstance.clearReferenceMap()
+  }
 
   return podsInstance.setObserver(
-    stateInstance,
+    [trackerObj],
     ObserverType.Concurrent,
-    () => {
-      trackerFn(stateInstance.getState())
+    ([val]) => {
+      trackerFn(val.cur, val.prev)
     }
   )
 }
@@ -61,89 +70,80 @@ export function apply(updateFn: () => void) {
   podsInstance.resolveConcurrentFn(updateFn)
 }
 
-export function getPodStateInstance<T>(podState: PodState<T>) {
-  const getInstance = (podState as any).getInstance
+export function getPodStateInstance(podState: PodState) {
+  if (podState !== undefined) {
+    const getInstance = (podState as any).getInstance
 
-  if (typeof getInstance !== 'function') {
-    throw new Error(
-      'Error attempting to get instance function on pod state object.'
-    )
+    if (typeof getInstance !== 'function') {
+      // throw new Error(
+      //   'Error attempting to get instance function on pod state object.'
+      // )
+      return podState
+    }
+
+    return getInstance()
   }
-
-  return getInstance() as State<T>
 }
 
 export function state<T>(
-  initialState: T
+  obj: T
 ): PodState<
   {
-    [K in keyof StateProperties<T>]: T[K]
-  },
-  {
-    [K in keyof FunctionProperties<T>]: T[K]
+    [K in keyof T]: T[K] extends (
+      ...args: any[]
+    ) => Generator<any, infer R, any>
+      ? R
+      : T[K]
   }
->
-export function state<S, A>(initialState: S, actions: A): PodState<S, A>
-
-export function state(arg1: any, arg2: any = {}): any {
-  const obj = { ...arg1, ...arg2 }
-
-  const properties: any = {}
-  const functions: any = {}
-
-  for (let [key, val] of Object.entries(obj)) {
-    if (typeof val === 'function') {
-      functions[key] = val
-    } else {
-      properties[key] = val
-    }
-  }
-
-  const draftState = finishDraft(createDraft(properties))
-  const instance = new State(draftState)
-
-  const stateProxy = new Proxy({} as any, {
-    set(_obj, prop, value) {
-      const draft = instance.getProxiedState()
-      draft[prop] = value
-      return true
-    },
-
-    get(target, prop, receiver) {
-      if (functions[prop]) {
-        return podsInstance.generateActionHandler(functions[prop])
-      } else if (typeof (instance as any)[prop] === 'function') {
-        return (...args: any[]) => {
-          return (instance as any)[prop](...args)
-        }
-      }
-      return (instance.getProxiedState() as any)[prop]
-    }
-  })
-
-  return stateProxy
+> {
+  return generateStateProxy(obj) as any
 }
 
-export function usePods<S extends PodState[]>(...states: S): InferStates<S> {
+export function use<T>(stateOrProp: PodState<T> | T): T
+export function use<A extends any[]>(
+  ...statesAndProps: A
+): {
+  [Index in keyof A]: A[Index] extends PodState<infer T> ? T : A[Index]
+}
+export function use(...args: any[]) {
   const react = getReact()
 
-  const [podState, setPodState] = react.useState(() => {
-    return mapStateValues(states)
+  const references = args.map((ref) => {
+    const state = getPodStateInstance(ref)
+    return state instanceof State
+      ? state
+      : podsInstance.shiftLastStateReference()
+  })
+
+  const [state, setState] = react.useState(() => {
+    const res = references.map((ref) => {
+      if (ref !== undefined) {
+        if (ref instanceof State) {
+          return ref.getState()
+        }
+
+        if (ref.state && ref.propertyPath) {
+          return get(ref.state.getState(), ref.propertyPath)
+        }
+      }
+      return undefined
+    })
+
+    return res.length === 1 ? res[0] : res
   })
 
   react.useEffect(() => {
-    const stateInstances = states.map(({ getInstance }) => getInstance())
-
     return podsInstance.setObserver(
-      stateInstances,
+      references as any,
       ObserverType.Consecutive,
-      () => {
-        setPodState(mapStateValues(states))
+      (vals: any[]) => {
+        const mappedVals = vals.map(({ cur }) => cur)
+        setState(mappedVals.length === 1 ? mappedVals[0] : mappedVals)
       }
     )
   }, [])
 
-  return podState
+  return state
 }
 
 export function getReact() {

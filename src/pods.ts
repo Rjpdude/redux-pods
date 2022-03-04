@@ -6,17 +6,21 @@ import {
   ActionTypes,
   Observer,
   ObserverType,
-  ResolutionStatus
+  ResolutionStatus,
+  StateReference
 } from './exports'
+import get from 'lodash.get'
 
 export class Pods {
   private stateTree: StateTree
   private store: Store
+
+  private referenceMap: StateReference[] = []
   private resolutionStatus = ResolutionStatus.Pendng
 
   private states = new Set<State>()
-  private updatedStates = new Set<State>()
-  private observers = new Map<State[], Observer>()
+  private updatedStates = new Map<State, boolean>()
+  private observers = new Map<Array<State | StateReference>, Observer>()
 
   registerReduxStore(store: Store) {
     this.store = store
@@ -47,18 +51,18 @@ export class Pods {
   }
 
   setUpdatedState(state: State<any>) {
-    if (!this.updatedStates.has(state)) {
-      this.updatedStates.add(state)
-    }
+    this.updatedStates.set(state, false)
   }
 
-  private onStateRes() {
+  private onStateRes(applyDraft = false) {
     if (this.updatedStates.size === 0) {
       return
     }
 
-    for (const state of this.updatedStates) {
-      state.applyInternalState()
+    if (applyDraft) {
+      for (const state of this.states) {
+        state.applyNextState()
+      }
     }
 
     this.resolveConsecutiveObservers()
@@ -66,47 +70,38 @@ export class Pods {
   }
 
   setObserver(
-    states: State | State[],
+    val: Array<State | StateReference>,
     type: ObserverType,
-    observerFn: () => void
+    observerFn: (...args: any[]) => void
   ) {
-    const arr = Array.isArray(states) ? [...states] : [states]
-
-    this.observers.set(arr, {
+    this.observers.set(val, {
       type,
       fn: observerFn
     })
 
     return () => {
-      this.observers.delete(arr)
+      this.observers.delete(val)
     }
   }
 
   sideEffects() {
-    const actuallyUpdatedStates = new Set<State>()
-
-    for (let state of this.updatedStates) {
-      const updated = state.checkDraftUpdate()
-
-      if (!updated) {
-        this.updatedStates.delete(state)
-      } else {
-        if (!actuallyUpdatedStates.has(state)) {
-          actuallyUpdatedStates.add(state)
-        }
+    for (let [state, flag] of this.updatedStates) {
+      if (!flag) {
+        this.updatedStates.set(state, true)
         this.resolveConcurrentObservers(state)
+        this.sideEffects()
+        return
       }
     }
-
-    if (actuallyUpdatedStates.size) {
-      this.updatedStates = actuallyUpdatedStates
-      this.next()
-    }
+    this.next()
   }
 
   resolveObservers(
     type: ObserverType,
-    resolve: (trackedStates: State[], fn: Observer['fn']) => void
+    resolve: (
+      tracked: Array<State | StateReference>,
+      fn: Observer['fn']
+    ) => void
   ) {
     const status =
       type === ObserverType.Concurrent
@@ -114,35 +109,73 @@ export class Pods {
         : ResolutionStatus.ConsecutiveAction
 
     this.useResolutionStatus(status, () => {
-      for (const [trackedStates, observer] of this.observers) {
+      for (const [tracked, observer] of this.observers) {
         if (observer.type === type) {
-          resolve(trackedStates, observer.fn)
+          resolve(tracked, observer.fn)
         }
       }
     })
   }
 
   resolveConsecutiveObservers() {
-    this.resolveObservers(ObserverType.Consecutive, (trackedStates, fn) => {
-      const updated = trackedStates.some((s) => this.updatedStates.has(s))
+    this.resolveObservers(ObserverType.Consecutive, (tracked, fn) => {
+      const hasStateUpdate = tracked.some((t) =>
+        this.updatedStates.has(t instanceof State ? t : t.state)
+      )
 
-      if (updated) {
-        fn()
+      if (hasStateUpdate) {
+        const next = tracked.map((t) => ({
+          cur:
+            t instanceof State
+              ? t.getState()
+              : get(t.state.getState(), t.propertyPath),
+          prev:
+            t instanceof State
+              ? t.getPreviousState()
+              : get(t.state.getPreviousState(), t.propertyPath)
+        }))
+
+        const updated = next.some(({ cur, prev }) => !Object.is(cur, prev))
+
+        if (updated) {
+          fn(next)
+        }
       }
     })
   }
 
-  resolveConcurrentObservers(state: State) {
-    this.resolveObservers(ObserverType.Concurrent, (trackedStates, fn) => {
-      if (trackedStates.includes(state)) {
-        fn()
+  resolveConcurrentObservers(trackedState: State) {
+    this.resolveObservers(ObserverType.Concurrent, (tracked, fn) => {
+      const hasStateUpdate = tracked.some(
+        (t) => (t instanceof State ? t : t.state) === trackedState
+      )
+
+      if (hasStateUpdate) {
+        const next = tracked.map((t) => ({
+          cur:
+            t instanceof State
+              ? t.getProxiedState()
+              : get(t.state.getProxiedState(), t.propertyPath),
+          prev:
+            t instanceof State
+              ? t.getState()
+              : get(t.state.getState(), t.propertyPath)
+        }))
+
+        const updated = next.some(({ cur, prev }) => !Object.is(cur, prev))
+
+        if (updated) {
+          fn(next)
+        }
       }
     })
   }
 
   resolveConcurrentFn(fn: () => void) {
-    if (this.resolvingWithin(ResolutionStatus.ConcurrentAction)) {
-      throw new Error('Apply handlers cannot be called within the callstack of observer-like functions.')
+    if (this.resolvingWithin(ResolutionStatus.ConsecutiveAction)) {
+      throw new Error(
+        'Apply handlers cannot be called within the callstack of observer-like functions.'
+      )
     }
 
     this.useResolutionStatus(ResolutionStatus.ConcurrentAction, () => {
@@ -151,16 +184,28 @@ export class Pods {
     })
   }
 
-  generateActionHandler(fn: (...args: any[]) => void) {
+  generateActionHandler(fn: (...args: any[]) => any) {
     return (...args: any[]) => {
-      if (this.resolvingWithin(ResolutionStatus.ConcurrentAction)) {
-        throw new Error('Action handlers cannot be called within the callstack of observer-like functions.')
+      if (this.resolvingWithin(ResolutionStatus.ConsecutiveAction)) {
+        throw new Error(
+          'Action handlers cannot be called within the callstack of observer-like functions.'
+        )
       }
 
       return this.useResolutionStatus(ResolutionStatus.ActionHandler, () => {
         const res = fn(...args)
+
         this.sideEffects()
-        return res
+
+        return res instanceof Promise
+          ? Promise.resolve<void | (() => void)>(res).then((asyncRes) => {
+              if (typeof asyncRes === 'function') {
+                this.resolveConcurrentFn(asyncRes)
+                return
+              }
+              return asyncRes
+            })
+          : res
       })
     }
   }
@@ -176,7 +221,7 @@ export class Pods {
           type: ActionTypes.ResolveNext
         })
       }
-      this.onStateRes()
+      this.onStateRes(!this.stateTree)
     }
   }
 
@@ -188,7 +233,7 @@ export class Pods {
     })
   }
 
-  useResolutionStatus(resolutionStatus: ResolutionStatus, fn: () => void) {
+  useResolutionStatus<R>(resolutionStatus: ResolutionStatus, fn: () => R): R {
     const previousStatus = this.resolutionStatus
 
     this.resolutionStatus = resolutionStatus
@@ -204,6 +249,34 @@ export class Pods {
 
   resolvingWithin(...status: ResolutionStatus[]) {
     return status.includes(this.resolutionStatus)
+  }
+
+  registerStateReference(reference: StateReference) {
+    this.referenceMap.push(reference)
+  }
+
+  useStateReferencePaths() {
+    const paths = this.referenceMap.map(({ propertyPath }) => propertyPath)
+
+    this.clearReferenceMap()
+
+    return paths
+  }
+
+  useLastStateReference() {
+    return this.referenceMap.pop()
+  }
+
+  shiftLastStateReference() {
+    return this.referenceMap.shift()
+  }
+
+  getLastStateReferences() {
+    return this.referenceMap
+  }
+
+  clearReferenceMap() {
+    this.referenceMap = []
   }
 
   getState() {

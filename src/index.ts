@@ -6,5 +6,5 @@ export {
   observe,
   apply,
   track,
-  usePods
+  use
 } from './exports'

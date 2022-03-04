@@ -8,7 +8,8 @@ export enum ResolutionStatus {
   Pendng,
   ConsecutiveAction,
   ConcurrentAction,
-  ActionHandler
+  ActionHandler,
+  Compute
 }
 
 export enum ActionTypes {
@@ -21,15 +22,27 @@ export interface InternalActionType {
   type: ActionTypes
 }
 
+export interface StateReference {
+  state: State
+  propertyPath: string
+}
+
 export interface Observer {
   type: ObserverType
-  fn(): void
+  fn(...args: any[]): void
 }
 
 export enum ObserverType {
   Concurrent,
   Consecutive
 }
+
+export interface ObservedStateProperty {
+  state: State
+  path: string
+}
+
+export interface StateCreatorMembers {}
 
 export type ActionResolver<S> = () => S | void
 
@@ -40,7 +53,7 @@ export type FunctionPropertyNames<T> = {
 export type StateProperties<T> = Omit<T, FunctionPropertyNames<T>>
 export type FunctionProperties<T> = Pick<T, FunctionPropertyNames<T>>
 
-export type PodState<S = any, A = {}> = S & A & PodStateMethods<S>
+export type PodState<T = any> = T & PodStateMethods<T>
 
 export type PodStates<S, M> = PropertyMap<S> &
   FunctionMap<M> &
@@ -56,7 +69,7 @@ export type FunctionMap<P> = {
 
 export type PodStateMethods<S = any> = Pick<
   State<S>,
-  'reducer' | 'getState' | 'mapState' | 'use'
+  'reducer' | 'getState' | 'mapState'
 >
 
 export type InferStates<A> = {
