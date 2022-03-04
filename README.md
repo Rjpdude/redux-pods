@@ -32,7 +32,7 @@ function Component() {
 
 # State
 
-Immutable properties, computations and action handlers are instantiated in one simple, unified declaration. **No boilerplate, wrappers, mappers or configuration necessary.**
+State objects and their corresponding properties, computation and action handlers are instantiated in one simple, unified declaration. **No boilerplate, wrappers, mappers or configuration necessary.** It's that easy.
 
 ## Properties
 
@@ -84,7 +84,7 @@ const data = state({
 })
 ```
 
-The state will compute a subset of elements that are applied to a `squares` property anytime a change is made to the `elems` array property. The resulting state object will resolve as:
+The `squares` property will compute on initialization, and every subsequent change to `elems`.
 
 ```ts
 {
@@ -100,3 +100,59 @@ The state will compute a subset of elements that are applied to a `squares` prop
   ]
 }
 ```
+
+# React
+
+State objects can be used in React components directly. No configuration or higher ordered providers are necessary. Simply import and call the `use` hook with any combination of state objects or individual state properties.
+
+The following is a component that accesses two specific properties from two different state objects in one line:
+
+```tsx
+import { use } from 'redux-pods'
+import { player, game } from './states'
+
+function Component() {
+  const [username, score] = use(player.username, game.score)
+
+  return (
+    <div>
+      <p>Hello {username}. Your score is {score}.</p>
+    </div>
+  )
+}
+```
+
+An entire state object can also be accessed just as easily:
+
+```tsx
+import { game } from './states'
+
+function Component() {
+  const gameState = use(game)
+
+  return (
+    <div>
+      <p>Current level: {gameState.level}</p>
+      <p>Score: {gameState.score}</p>
+    </div>
+  )
+}
+```
+
+## Action Handlers
+
+Action handlers from any state object can be called directly from anywhere in your UI. Consider an individual controller component with no stateful dependencies:
+
+```tsx
+import { game } from './states'
+
+function Controller {
+  return (
+    <div>
+      <button onClick={() => game.jump()}>Jump</button>
+      <button onClick={() => game.bounce()}>Bounce</button>
+    </div>
+  )
+}
+```
+
