@@ -45,7 +45,7 @@ const position = state({
 })
 ```
 
-State properties should be **pure** and **predictible**. They can be primitives, arrays, sets, maps or objects with nested properties thereof. Assignments and updates to any state property, nested at any level, will produce a fresh immutible copy with the corresponding changes.
+State properties should be **pure** and **predictible**. They can be primitives, arrays, sets, maps or objects with any nested asortment thereof. Assignments and updates to any state property, nested at any level, will produce a fresh immutible copy with the corresponding changes.
 
 ## Action Handlers
 
