@@ -59,7 +59,7 @@ const data = state({
   },
 
   addSqare(size) {
-    this.setBlock(size, size)
+    this.addBlock(size, size)
   }
 })
 ```
