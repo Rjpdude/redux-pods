@@ -68,7 +68,7 @@ Action handlers are defined as method functions that are contextually bound to t
 
 ## Computed
 
-The above `data` state can be extended with a computed `squares` property using a generator function syntax:
+The above `data` state can be extended with a computed `squares` property using the get syntax:
 
 ```ts
 const data = state({
@@ -78,7 +78,7 @@ const data = state({
     { w: 100, h: 100 },
   ],
 
-  *squares() {
+  get squares() {
     return this.elems.filter(({ w, h }) => w === h)
   }
 })
